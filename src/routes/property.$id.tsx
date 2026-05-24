@@ -107,7 +107,7 @@ function PropertyPage() {
             <section className="mt-10">
               <h2 className="font-display text-xl font-bold">Amenities</h2>
               <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {property.amenities.map((a) => (
+                {property.amenities.map((a: string) => (
                   <div key={a} className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm">
                     <CheckCircle2 className="h-4 w-4 text-accent" />
                     {a}
