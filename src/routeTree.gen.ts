@@ -9,38 +9,134 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ListingsRouteImport } from './routes/listings'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PropertyIdRouteImport } from './routes/property.$id'
+import { Route as DashboardTenantRouteImport } from './routes/dashboard.tenant'
+import { Route as DashboardLandlordRouteImport } from './routes/dashboard.landlord'
+import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
 
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ListingsRoute = ListingsRouteImport.update({
+  id: '/listings',
+  path: '/listings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PropertyIdRoute = PropertyIdRouteImport.update({
+  id: '/property/$id',
+  path: '/property/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardTenantRoute = DashboardTenantRouteImport.update({
+  id: '/dashboard/tenant',
+  path: '/dashboard/tenant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardLandlordRoute = DashboardLandlordRouteImport.update({
+  id: '/dashboard/landlord',
+  path: '/dashboard/landlord',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardAdminRoute = DashboardAdminRouteImport.update({
+  id: '/dashboard/admin',
+  path: '/dashboard/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/listings': typeof ListingsRoute
+  '/login': typeof LoginRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
+  '/dashboard/landlord': typeof DashboardLandlordRoute
+  '/dashboard/tenant': typeof DashboardTenantRoute
+  '/property/$id': typeof PropertyIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/listings': typeof ListingsRoute
+  '/login': typeof LoginRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
+  '/dashboard/landlord': typeof DashboardLandlordRoute
+  '/dashboard/tenant': typeof DashboardTenantRoute
+  '/property/$id': typeof PropertyIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/listings': typeof ListingsRoute
+  '/login': typeof LoginRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
+  '/dashboard/landlord': typeof DashboardLandlordRoute
+  '/dashboard/tenant': typeof DashboardTenantRoute
+  '/property/$id': typeof PropertyIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/listings'
+    | '/login'
+    | '/dashboard/admin'
+    | '/dashboard/landlord'
+    | '/dashboard/tenant'
+    | '/property/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/listings'
+    | '/login'
+    | '/dashboard/admin'
+    | '/dashboard/landlord'
+    | '/dashboard/tenant'
+    | '/property/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/listings'
+    | '/login'
+    | '/dashboard/admin'
+    | '/dashboard/landlord'
+    | '/dashboard/tenant'
+    | '/property/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ListingsRoute: typeof ListingsRoute
+  LoginRoute: typeof LoginRoute
+  DashboardAdminRoute: typeof DashboardAdminRoute
+  DashboardLandlordRoute: typeof DashboardLandlordRoute
+  DashboardTenantRoute: typeof DashboardTenantRoute
+  PropertyIdRoute: typeof PropertyIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/listings': {
+      id: '/listings'
+      path: '/listings'
+      fullPath: '/listings'
+      preLoaderRoute: typeof ListingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +144,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/property/$id': {
+      id: '/property/$id'
+      path: '/property/$id'
+      fullPath: '/property/$id'
+      preLoaderRoute: typeof PropertyIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/tenant': {
+      id: '/dashboard/tenant'
+      path: '/dashboard/tenant'
+      fullPath: '/dashboard/tenant'
+      preLoaderRoute: typeof DashboardTenantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/landlord': {
+      id: '/dashboard/landlord'
+      path: '/dashboard/landlord'
+      fullPath: '/dashboard/landlord'
+      preLoaderRoute: typeof DashboardLandlordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/admin': {
+      id: '/dashboard/admin'
+      path: '/dashboard/admin'
+      fullPath: '/dashboard/admin'
+      preLoaderRoute: typeof DashboardAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ListingsRoute: ListingsRoute,
+  LoginRoute: LoginRoute,
+  DashboardAdminRoute: DashboardAdminRoute,
+  DashboardLandlordRoute: DashboardLandlordRoute,
+  DashboardTenantRoute: DashboardTenantRoute,
+  PropertyIdRoute: PropertyIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
