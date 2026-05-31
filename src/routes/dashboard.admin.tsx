@@ -10,6 +10,7 @@ import {
   Flag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RequireAuth } from "@/components/auth/RequireAuth";
 
 const navItems = [
   { to: "/dashboard/admin", label: "Overview", icon: BarChart3 },
@@ -21,7 +22,11 @@ const navItems = [
 
 export const Route = createFileRoute("/dashboard/admin")({
   head: () => ({ meta: [{ title: "Admin Dashboard — GetKeja" }] }),
-  component: AdminDashboard,
+  component: () => (
+    <RequireAuth requireRole="admin">
+      <AdminDashboard />
+    </RequireAuth>
+  ),
 });
 
 function AdminDashboard() {
