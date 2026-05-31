@@ -13,6 +13,8 @@ import {
   User,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { RequireAuth } from "@/components/auth/RequireAuth";
+import { useAuth } from "@/hooks/use-auth";
 
 const navItems = [
   { to: "/dashboard/tenant", label: "Home", icon: Home },
@@ -25,7 +27,11 @@ const navItems = [
 
 export const Route = createFileRoute("/dashboard/tenant")({
   head: () => ({ meta: [{ title: "Tenant Dashboard — GetKeja" }] }),
-  component: TenantDashboard,
+  component: () => (
+    <RequireAuth requireRole="tenant">
+      <TenantDashboard />
+    </RequireAuth>
+  ),
 });
 
 function TenantDashboard() {
@@ -35,7 +41,9 @@ function TenantDashboard() {
       <main className="flex-1 p-6 lg:p-10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="font-display text-3xl font-bold">Welcome back, Amani 👋</h1>
+            <h1 className="font-display text-3xl font-bold">
+              Welcome back, {useAuth().profile?.full_name?.split(" ")[0] ?? "friend"} 👋
+            </h1>
             <p className="text-sm text-muted-foreground mt-1">Here's what's happening with your hunt.</p>
           </div>
           <div className="relative">

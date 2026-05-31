@@ -13,6 +13,7 @@ import {
   Plus,
   User,
 } from "lucide-react";
+import { RequireAuth } from "@/components/auth/RequireAuth";
 
 const navItems = [
   { to: "/dashboard/landlord", label: "My properties", icon: Building2 },
@@ -25,7 +26,11 @@ const navItems = [
 
 export const Route = createFileRoute("/dashboard/landlord")({
   head: () => ({ meta: [{ title: "Landlord Dashboard — GetKeja" }] }),
-  component: LandlordDashboard,
+  component: () => (
+    <RequireAuth requireRole="landlord">
+      <LandlordDashboard />
+    </RequireAuth>
+  ),
 });
 
 function LandlordDashboard() {

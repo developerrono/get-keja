@@ -8,6 +8,7 @@ import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { SlidersHorizontal } from "lucide-react";
+import { RequireAuth } from "@/components/auth/RequireAuth";
 
 export const Route = createFileRoute("/listings")({
   head: () => ({
@@ -16,7 +17,11 @@ export const Route = createFileRoute("/listings")({
       { name: "description", content: "Browse verified rental listings with advanced filters." },
     ],
   }),
-  component: ListingsPage,
+  component: () => (
+    <RequireAuth>
+      <ListingsPage />
+    </RequireAuth>
+  ),
 });
 
 const amenityOptions = ["WiFi", "Parking", "Furnished", "Water", "Security", "Pool"];
