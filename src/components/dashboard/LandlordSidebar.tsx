@@ -56,19 +56,19 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
         {items.map((i) => {
           const active = i.exact ? pathname === i.to : pathname === i.to || pathname.startsWith(i.to + "/");
           return (
-            <Link
-              key={i.to}
-              to={i.to}
-              onClick={onNavigate}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                active
-                  ? "bg-primary text-primary-foreground shadow-soft"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent"
-              }`}
-            >
-              <i.icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{i.label}</span>
-            </Link>
+          <Link
+            key={i.to}
+            to={i.to as string}
+            onClick={onNavigate}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              active
+                ? "bg-primary text-primary-foreground shadow-soft"
+                : "text-sidebar-foreground hover:bg-sidebar-accent"
+            }`}
+          >
+            <i.icon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{i.label}</span>
+          </Link>
           );
         })}
       </nav>
