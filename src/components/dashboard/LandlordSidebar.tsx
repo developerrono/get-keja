@@ -58,7 +58,7 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
           return (
           <Link
             key={i.to}
-            to={i.to as string}
+            to={i.to as never}
             onClick={onNavigate}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
               active
