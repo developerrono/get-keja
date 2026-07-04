@@ -18,7 +18,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 
-const items = [
+type NavItem = { to: string; label: string; icon: typeof Home; exact?: boolean };
+const items: NavItem[] = [
   { to: "/dashboard/landlord", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/dashboard/landlord/properties", label: "My Properties", icon: Building2 },
   { to: "/dashboard/landlord/add-property", label: "Add Property", icon: Plus },
@@ -28,7 +29,7 @@ const items = [
   { to: "/dashboard/landlord/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/dashboard/landlord/reviews", label: "Reviews", icon: Star },
   { to: "/dashboard/landlord/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 function NavContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
