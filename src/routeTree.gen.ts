@@ -21,6 +21,7 @@ import { Route as DashboardLandlordRouteImport } from './routes/dashboard.landlo
 import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
 import { Route as DashboardTenantIndexRouteImport } from './routes/dashboard.tenant.index'
 import { Route as DashboardLandlordIndexRouteImport } from './routes/dashboard.landlord.index'
+import { Route as DashboardAdminIndexRouteImport } from './routes/dashboard.admin.index'
 import { Route as DashboardTenantVisitsRouteImport } from './routes/dashboard.tenant.visits'
 import { Route as DashboardTenantSearchRouteImport } from './routes/dashboard.tenant.search'
 import { Route as DashboardTenantReviewsRouteImport } from './routes/dashboard.tenant.reviews'
@@ -39,6 +40,15 @@ import { Route as DashboardLandlordPropertiesRouteImport } from './routes/dashbo
 import { Route as DashboardLandlordMessagesRouteImport } from './routes/dashboard.landlord.messages'
 import { Route as DashboardLandlordAnalyticsRouteImport } from './routes/dashboard.landlord.analytics'
 import { Route as DashboardLandlordAddPropertyRouteImport } from './routes/dashboard.landlord.add-property'
+import { Route as DashboardAdminVerificationsRouteImport } from './routes/dashboard.admin.verifications'
+import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
+import { Route as DashboardAdminSettingsRouteImport } from './routes/dashboard.admin.settings'
+import { Route as DashboardAdminReviewsRouteImport } from './routes/dashboard.admin.reviews'
+import { Route as DashboardAdminReportsRouteImport } from './routes/dashboard.admin.reports'
+import { Route as DashboardAdminPropertiesRouteImport } from './routes/dashboard.admin.properties'
+import { Route as DashboardAdminNotificationsRouteImport } from './routes/dashboard.admin.notifications'
+import { Route as DashboardAdminLandlordsRouteImport } from './routes/dashboard.admin.landlords'
+import { Route as DashboardAdminAnalyticsRouteImport } from './routes/dashboard.admin.analytics'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -99,6 +109,11 @@ const DashboardLandlordIndexRoute = DashboardLandlordIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardLandlordRoute,
+} as any)
+const DashboardAdminIndexRoute = DashboardAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardAdminRoute,
 } as any)
 const DashboardTenantVisitsRoute = DashboardTenantVisitsRouteImport.update({
   id: '/visits',
@@ -199,6 +214,54 @@ const DashboardLandlordAddPropertyRoute =
     path: '/add-property',
     getParentRoute: () => DashboardLandlordRoute,
   } as any)
+const DashboardAdminVerificationsRoute =
+  DashboardAdminVerificationsRouteImport.update({
+    id: '/verifications',
+    path: '/verifications',
+    getParentRoute: () => DashboardAdminRoute,
+  } as any)
+const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminSettingsRoute = DashboardAdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminReviewsRoute = DashboardAdminReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminReportsRoute = DashboardAdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminPropertiesRoute =
+  DashboardAdminPropertiesRouteImport.update({
+    id: '/properties',
+    path: '/properties',
+    getParentRoute: () => DashboardAdminRoute,
+  } as any)
+const DashboardAdminNotificationsRoute =
+  DashboardAdminNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => DashboardAdminRoute,
+  } as any)
+const DashboardAdminLandlordsRoute = DashboardAdminLandlordsRouteImport.update({
+  id: '/landlords',
+  path: '/landlords',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
+const DashboardAdminAnalyticsRoute = DashboardAdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -207,10 +270,19 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/dashboard/admin': typeof DashboardAdminRoute
+  '/dashboard/admin': typeof DashboardAdminRouteWithChildren
   '/dashboard/landlord': typeof DashboardLandlordRouteWithChildren
   '/dashboard/tenant': typeof DashboardTenantRouteWithChildren
   '/property/$id': typeof PropertyIdRoute
+  '/dashboard/admin/analytics': typeof DashboardAdminAnalyticsRoute
+  '/dashboard/admin/landlords': typeof DashboardAdminLandlordsRoute
+  '/dashboard/admin/notifications': typeof DashboardAdminNotificationsRoute
+  '/dashboard/admin/properties': typeof DashboardAdminPropertiesRoute
+  '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
+  '/dashboard/admin/reviews': typeof DashboardAdminReviewsRoute
+  '/dashboard/admin/settings': typeof DashboardAdminSettingsRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/admin/verifications': typeof DashboardAdminVerificationsRoute
   '/dashboard/landlord/add-property': typeof DashboardLandlordAddPropertyRoute
   '/dashboard/landlord/analytics': typeof DashboardLandlordAnalyticsRoute
   '/dashboard/landlord/messages': typeof DashboardLandlordMessagesRoute
@@ -229,6 +301,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/tenant/reviews': typeof DashboardTenantReviewsRoute
   '/dashboard/tenant/search': typeof DashboardTenantSearchRoute
   '/dashboard/tenant/visits': typeof DashboardTenantVisitsRoute
+  '/dashboard/admin/': typeof DashboardAdminIndexRoute
   '/dashboard/landlord/': typeof DashboardLandlordIndexRoute
   '/dashboard/tenant/': typeof DashboardTenantIndexRoute
 }
@@ -239,8 +312,16 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/dashboard/admin': typeof DashboardAdminRoute
   '/property/$id': typeof PropertyIdRoute
+  '/dashboard/admin/analytics': typeof DashboardAdminAnalyticsRoute
+  '/dashboard/admin/landlords': typeof DashboardAdminLandlordsRoute
+  '/dashboard/admin/notifications': typeof DashboardAdminNotificationsRoute
+  '/dashboard/admin/properties': typeof DashboardAdminPropertiesRoute
+  '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
+  '/dashboard/admin/reviews': typeof DashboardAdminReviewsRoute
+  '/dashboard/admin/settings': typeof DashboardAdminSettingsRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/admin/verifications': typeof DashboardAdminVerificationsRoute
   '/dashboard/landlord/add-property': typeof DashboardLandlordAddPropertyRoute
   '/dashboard/landlord/analytics': typeof DashboardLandlordAnalyticsRoute
   '/dashboard/landlord/messages': typeof DashboardLandlordMessagesRoute
@@ -259,6 +340,7 @@ export interface FileRoutesByTo {
   '/dashboard/tenant/reviews': typeof DashboardTenantReviewsRoute
   '/dashboard/tenant/search': typeof DashboardTenantSearchRoute
   '/dashboard/tenant/visits': typeof DashboardTenantVisitsRoute
+  '/dashboard/admin': typeof DashboardAdminIndexRoute
   '/dashboard/landlord': typeof DashboardLandlordIndexRoute
   '/dashboard/tenant': typeof DashboardTenantIndexRoute
 }
@@ -270,10 +352,19 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/dashboard/admin': typeof DashboardAdminRoute
+  '/dashboard/admin': typeof DashboardAdminRouteWithChildren
   '/dashboard/landlord': typeof DashboardLandlordRouteWithChildren
   '/dashboard/tenant': typeof DashboardTenantRouteWithChildren
   '/property/$id': typeof PropertyIdRoute
+  '/dashboard/admin/analytics': typeof DashboardAdminAnalyticsRoute
+  '/dashboard/admin/landlords': typeof DashboardAdminLandlordsRoute
+  '/dashboard/admin/notifications': typeof DashboardAdminNotificationsRoute
+  '/dashboard/admin/properties': typeof DashboardAdminPropertiesRoute
+  '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
+  '/dashboard/admin/reviews': typeof DashboardAdminReviewsRoute
+  '/dashboard/admin/settings': typeof DashboardAdminSettingsRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/admin/verifications': typeof DashboardAdminVerificationsRoute
   '/dashboard/landlord/add-property': typeof DashboardLandlordAddPropertyRoute
   '/dashboard/landlord/analytics': typeof DashboardLandlordAnalyticsRoute
   '/dashboard/landlord/messages': typeof DashboardLandlordMessagesRoute
@@ -292,6 +383,7 @@ export interface FileRoutesById {
   '/dashboard/tenant/reviews': typeof DashboardTenantReviewsRoute
   '/dashboard/tenant/search': typeof DashboardTenantSearchRoute
   '/dashboard/tenant/visits': typeof DashboardTenantVisitsRoute
+  '/dashboard/admin/': typeof DashboardAdminIndexRoute
   '/dashboard/landlord/': typeof DashboardLandlordIndexRoute
   '/dashboard/tenant/': typeof DashboardTenantIndexRoute
 }
@@ -308,6 +400,15 @@ export interface FileRouteTypes {
     | '/dashboard/landlord'
     | '/dashboard/tenant'
     | '/property/$id'
+    | '/dashboard/admin/analytics'
+    | '/dashboard/admin/landlords'
+    | '/dashboard/admin/notifications'
+    | '/dashboard/admin/properties'
+    | '/dashboard/admin/reports'
+    | '/dashboard/admin/reviews'
+    | '/dashboard/admin/settings'
+    | '/dashboard/admin/users'
+    | '/dashboard/admin/verifications'
     | '/dashboard/landlord/add-property'
     | '/dashboard/landlord/analytics'
     | '/dashboard/landlord/messages'
@@ -326,6 +427,7 @@ export interface FileRouteTypes {
     | '/dashboard/tenant/reviews'
     | '/dashboard/tenant/search'
     | '/dashboard/tenant/visits'
+    | '/dashboard/admin/'
     | '/dashboard/landlord/'
     | '/dashboard/tenant/'
   fileRoutesByTo: FileRoutesByTo
@@ -336,8 +438,16 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
-    | '/dashboard/admin'
     | '/property/$id'
+    | '/dashboard/admin/analytics'
+    | '/dashboard/admin/landlords'
+    | '/dashboard/admin/notifications'
+    | '/dashboard/admin/properties'
+    | '/dashboard/admin/reports'
+    | '/dashboard/admin/reviews'
+    | '/dashboard/admin/settings'
+    | '/dashboard/admin/users'
+    | '/dashboard/admin/verifications'
     | '/dashboard/landlord/add-property'
     | '/dashboard/landlord/analytics'
     | '/dashboard/landlord/messages'
@@ -356,6 +466,7 @@ export interface FileRouteTypes {
     | '/dashboard/tenant/reviews'
     | '/dashboard/tenant/search'
     | '/dashboard/tenant/visits'
+    | '/dashboard/admin'
     | '/dashboard/landlord'
     | '/dashboard/tenant'
   id:
@@ -370,6 +481,15 @@ export interface FileRouteTypes {
     | '/dashboard/landlord'
     | '/dashboard/tenant'
     | '/property/$id'
+    | '/dashboard/admin/analytics'
+    | '/dashboard/admin/landlords'
+    | '/dashboard/admin/notifications'
+    | '/dashboard/admin/properties'
+    | '/dashboard/admin/reports'
+    | '/dashboard/admin/reviews'
+    | '/dashboard/admin/settings'
+    | '/dashboard/admin/users'
+    | '/dashboard/admin/verifications'
     | '/dashboard/landlord/add-property'
     | '/dashboard/landlord/analytics'
     | '/dashboard/landlord/messages'
@@ -388,6 +508,7 @@ export interface FileRouteTypes {
     | '/dashboard/tenant/reviews'
     | '/dashboard/tenant/search'
     | '/dashboard/tenant/visits'
+    | '/dashboard/admin/'
     | '/dashboard/landlord/'
     | '/dashboard/tenant/'
   fileRoutesById: FileRoutesById
@@ -399,7 +520,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
-  DashboardAdminRoute: typeof DashboardAdminRoute
+  DashboardAdminRoute: typeof DashboardAdminRouteWithChildren
   DashboardLandlordRoute: typeof DashboardLandlordRouteWithChildren
   DashboardTenantRoute: typeof DashboardTenantRouteWithChildren
   PropertyIdRoute: typeof PropertyIdRoute
@@ -490,6 +611,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/landlord/'
       preLoaderRoute: typeof DashboardLandlordIndexRouteImport
       parentRoute: typeof DashboardLandlordRoute
+    }
+    '/dashboard/admin/': {
+      id: '/dashboard/admin/'
+      path: '/'
+      fullPath: '/dashboard/admin/'
+      preLoaderRoute: typeof DashboardAdminIndexRouteImport
+      parentRoute: typeof DashboardAdminRoute
     }
     '/dashboard/tenant/visits': {
       id: '/dashboard/tenant/visits'
@@ -617,8 +745,101 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLandlordAddPropertyRouteImport
       parentRoute: typeof DashboardLandlordRoute
     }
+    '/dashboard/admin/verifications': {
+      id: '/dashboard/admin/verifications'
+      path: '/verifications'
+      fullPath: '/dashboard/admin/verifications'
+      preLoaderRoute: typeof DashboardAdminVerificationsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/users': {
+      id: '/dashboard/admin/users'
+      path: '/users'
+      fullPath: '/dashboard/admin/users'
+      preLoaderRoute: typeof DashboardAdminUsersRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/settings': {
+      id: '/dashboard/admin/settings'
+      path: '/settings'
+      fullPath: '/dashboard/admin/settings'
+      preLoaderRoute: typeof DashboardAdminSettingsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/reviews': {
+      id: '/dashboard/admin/reviews'
+      path: '/reviews'
+      fullPath: '/dashboard/admin/reviews'
+      preLoaderRoute: typeof DashboardAdminReviewsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/reports': {
+      id: '/dashboard/admin/reports'
+      path: '/reports'
+      fullPath: '/dashboard/admin/reports'
+      preLoaderRoute: typeof DashboardAdminReportsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/properties': {
+      id: '/dashboard/admin/properties'
+      path: '/properties'
+      fullPath: '/dashboard/admin/properties'
+      preLoaderRoute: typeof DashboardAdminPropertiesRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/notifications': {
+      id: '/dashboard/admin/notifications'
+      path: '/notifications'
+      fullPath: '/dashboard/admin/notifications'
+      preLoaderRoute: typeof DashboardAdminNotificationsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/landlords': {
+      id: '/dashboard/admin/landlords'
+      path: '/landlords'
+      fullPath: '/dashboard/admin/landlords'
+      preLoaderRoute: typeof DashboardAdminLandlordsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
+    '/dashboard/admin/analytics': {
+      id: '/dashboard/admin/analytics'
+      path: '/analytics'
+      fullPath: '/dashboard/admin/analytics'
+      preLoaderRoute: typeof DashboardAdminAnalyticsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
   }
 }
+
+interface DashboardAdminRouteChildren {
+  DashboardAdminAnalyticsRoute: typeof DashboardAdminAnalyticsRoute
+  DashboardAdminLandlordsRoute: typeof DashboardAdminLandlordsRoute
+  DashboardAdminNotificationsRoute: typeof DashboardAdminNotificationsRoute
+  DashboardAdminPropertiesRoute: typeof DashboardAdminPropertiesRoute
+  DashboardAdminReportsRoute: typeof DashboardAdminReportsRoute
+  DashboardAdminReviewsRoute: typeof DashboardAdminReviewsRoute
+  DashboardAdminSettingsRoute: typeof DashboardAdminSettingsRoute
+  DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
+  DashboardAdminVerificationsRoute: typeof DashboardAdminVerificationsRoute
+  DashboardAdminIndexRoute: typeof DashboardAdminIndexRoute
+}
+
+const DashboardAdminRouteChildren: DashboardAdminRouteChildren = {
+  DashboardAdminAnalyticsRoute: DashboardAdminAnalyticsRoute,
+  DashboardAdminLandlordsRoute: DashboardAdminLandlordsRoute,
+  DashboardAdminNotificationsRoute: DashboardAdminNotificationsRoute,
+  DashboardAdminPropertiesRoute: DashboardAdminPropertiesRoute,
+  DashboardAdminReportsRoute: DashboardAdminReportsRoute,
+  DashboardAdminReviewsRoute: DashboardAdminReviewsRoute,
+  DashboardAdminSettingsRoute: DashboardAdminSettingsRoute,
+  DashboardAdminUsersRoute: DashboardAdminUsersRoute,
+  DashboardAdminVerificationsRoute: DashboardAdminVerificationsRoute,
+  DashboardAdminIndexRoute: DashboardAdminIndexRoute,
+}
+
+const DashboardAdminRouteWithChildren = DashboardAdminRoute._addFileChildren(
+  DashboardAdminRouteChildren,
+)
 
 interface DashboardLandlordRouteChildren {
   DashboardLandlordAddPropertyRoute: typeof DashboardLandlordAddPropertyRoute
@@ -686,7 +907,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
-  DashboardAdminRoute: DashboardAdminRoute,
+  DashboardAdminRoute: DashboardAdminRouteWithChildren,
   DashboardLandlordRoute: DashboardLandlordRouteWithChildren,
   DashboardTenantRoute: DashboardTenantRouteWithChildren,
   PropertyIdRoute: PropertyIdRoute,
