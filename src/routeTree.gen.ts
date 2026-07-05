@@ -16,7 +16,9 @@ import { Route as ListingsRouteImport } from './routes/listings'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PropertyIdRouteImport } from './routes/property.$id'
+import { Route as DashboardTenantRouteImport } from './routes/dashboard.tenant'
 import { Route as DashboardLandlordRouteImport } from './routes/dashboard.landlord'
+import { Route as DashboardAdminRouteImport } from './routes/dashboard.admin'
 import { Route as DashboardLandlordIndexRouteImport } from './routes/dashboard.landlord.index'
 import { Route as DashboardLandlordVisitsRouteImport } from './routes/dashboard.landlord.visits'
 import { Route as DashboardLandlordTenantsRouteImport } from './routes/dashboard.landlord.tenants'
@@ -62,9 +64,19 @@ const PropertyIdRoute = PropertyIdRouteImport.update({
   path: '/property/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardTenantRoute = DashboardTenantRouteImport.update({
+  id: '/dashboard/tenant',
+  path: '/dashboard/tenant',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardLandlordRoute = DashboardLandlordRouteImport.update({
   id: '/dashboard/landlord',
   path: '/dashboard/landlord',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardAdminRoute = DashboardAdminRouteImport.update({
+  id: '/dashboard/admin',
+  path: '/dashboard/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardLandlordIndexRoute = DashboardLandlordIndexRouteImport.update({
@@ -127,7 +139,9 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/landlord': typeof DashboardLandlordRouteWithChildren
+  '/dashboard/tenant': typeof DashboardTenantRoute
   '/property/$id': typeof PropertyIdRoute
   '/dashboard/landlord/add-property': typeof DashboardLandlordAddPropertyRoute
   '/dashboard/landlord/analytics': typeof DashboardLandlordAnalyticsRoute
@@ -146,6 +160,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
+  '/dashboard/tenant': typeof DashboardTenantRoute
   '/property/$id': typeof PropertyIdRoute
   '/dashboard/landlord/add-property': typeof DashboardLandlordAddPropertyRoute
   '/dashboard/landlord/analytics': typeof DashboardLandlordAnalyticsRoute
@@ -165,7 +181,9 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/dashboard/admin': typeof DashboardAdminRoute
   '/dashboard/landlord': typeof DashboardLandlordRouteWithChildren
+  '/dashboard/tenant': typeof DashboardTenantRoute
   '/property/$id': typeof PropertyIdRoute
   '/dashboard/landlord/add-property': typeof DashboardLandlordAddPropertyRoute
   '/dashboard/landlord/analytics': typeof DashboardLandlordAnalyticsRoute
@@ -186,7 +204,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/dashboard/admin'
     | '/dashboard/landlord'
+    | '/dashboard/tenant'
     | '/property/$id'
     | '/dashboard/landlord/add-property'
     | '/dashboard/landlord/analytics'
@@ -205,6 +225,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/dashboard/admin'
+    | '/dashboard/tenant'
     | '/property/$id'
     | '/dashboard/landlord/add-property'
     | '/dashboard/landlord/analytics'
@@ -223,7 +245,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/dashboard/admin'
     | '/dashboard/landlord'
+    | '/dashboard/tenant'
     | '/property/$id'
     | '/dashboard/landlord/add-property'
     | '/dashboard/landlord/analytics'
@@ -243,7 +267,9 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  DashboardAdminRoute: typeof DashboardAdminRoute
   DashboardLandlordRoute: typeof DashboardLandlordRouteWithChildren
+  DashboardTenantRoute: typeof DashboardTenantRoute
   PropertyIdRoute: typeof PropertyIdRoute
 }
 
@@ -298,11 +324,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PropertyIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/tenant': {
+      id: '/dashboard/tenant'
+      path: '/dashboard/tenant'
+      fullPath: '/dashboard/tenant'
+      preLoaderRoute: typeof DashboardTenantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/landlord': {
       id: '/dashboard/landlord'
       path: '/dashboard/landlord'
       fullPath: '/dashboard/landlord'
       preLoaderRoute: typeof DashboardLandlordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/admin': {
+      id: '/dashboard/admin'
+      path: '/dashboard/admin'
+      fullPath: '/dashboard/admin'
+      preLoaderRoute: typeof DashboardAdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard/landlord/': {
@@ -405,7 +445,9 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  DashboardAdminRoute: DashboardAdminRoute,
   DashboardLandlordRoute: DashboardLandlordRouteWithChildren,
+  DashboardTenantRoute: DashboardTenantRoute,
   PropertyIdRoute: PropertyIdRoute,
 }
 export const routeTree = rootRouteImport

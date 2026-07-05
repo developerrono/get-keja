@@ -85,9 +85,8 @@ export async function fetchPropertyById(id: string) {
     .select("id, full_name, avatar_url, is_verified, business_name")
     .eq("id", p.data.landlord_id)
     .maybeSingle();
-  // bump views
-  await supabase.rpc("noop_dummy" as never).catch(() => {});
-  await supabase.from("properties").update({ views_count: (p.data.views_count ?? 0) + 1 }).eq("id", id);
+  // bump views (best-effort)
+  supabase.from("properties").update({ views_count: (p.data.views_count ?? 0) + 1 }).eq("id", id).then(() => {}, () => {});
   return {
     property: p.data as DbProperty,
     units: (units.data ?? []) as DbUnit[],
