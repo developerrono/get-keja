@@ -1,15 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Building2, Chrome, Loader2, Mail, User } from "lucide-react";
+import { ArrowRight, Building2, Loader2, Mail, User } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/auth/AuthLayout";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
-import { useAuth, dashboardPathForRole, type AppRole } from "@/hooks/use-auth";
 
 const schema = z
   .object({
@@ -24,27 +21,41 @@ const schema = z
     path: ["confirm"],
   });
 
+type AppRole = "tenant" | "landlord";
+
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — GetKeja" }] }),
   component: SignupPage,
 });
 
+function getDashboardPath(role: string) {
+  switch (role) {
+    case "admin":
+      return "/dashboard/admin";
+    case "landlord":
+    case "verified_landlord":
+      return "/dashboard/landlord";
+    default:
+      return "/dashboard/tenant";
+  }
+}
+
 function SignupPage() {
   const navigate = useNavigate();
-  const { user, role, loading } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [selectedRole, setSelectedRole] = useState<AppRole>("tenant");
   const [submitting, setSubmitting] = useState(false);
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) {
-      navigate({ to: dashboardPathForRole(role), replace: true });
+    const storedUser = localStorage.getItem("keja_user");
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      navigate({ to: getDashboardPath(user.role), replace: true });
     }
-  }, [loading, user, role, navigate]);
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,35 +64,39 @@ function SignupPage() {
       toast.error(parsed.error.issues[0].message);
       return;
     }
-    setSubmitting(true);
-    const { error } = await supabase.auth.signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/login`,
-        data: {
-          full_name: parsed.data.fullName,
-          role: parsed.data.role,
-        },
-      },
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    toast.success("Account created. Check your email to verify, then sign in.");
-    navigate({ to: "/login" });
-  };
 
-  const handleGoogle = async () => {
-    setGoogleLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/login",
-    });
-    if (result.error) {
-      setGoogleLoading(false);
-      toast.error(result.error.message || "Could not sign in with Google");
+    setSubmitting(true);
+
+    try {
+      const response = await fetch(
+        "http://localhost/get-keja-backend/signup.php",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            fullName: parsed.data.fullName,
+            email: parsed.data.email,
+            password: parsed.data.password,
+            role: parsed.data.role,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success("Account created! Signing you in...");
+        localStorage.setItem("keja_user", JSON.stringify(result.user));
+        navigate({ to: getDashboardPath(result.user.role), replace: true });
+      } else {
+        toast.error(result.message || "Could not create account.");
+      }
+    } catch (error) {
+      toast.error("Server connection failed.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -90,21 +105,7 @@ function SignupPage() {
       <h1 className="font-display text-3xl font-bold">Create your account</h1>
       <p className="text-sm text-muted-foreground mt-1">Tenant or landlord — we've got you.</p>
 
-      <Button
-        variant="outline"
-        className="mt-6 w-full rounded-xl gap-2 h-11"
-        onClick={handleGoogle}
-        disabled={googleLoading}
-      >
-        {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Chrome className="h-4 w-4" />}
-        Sign up with Google
-      </Button>
-
-      <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-        <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
-      </div>
-
-      <form className="space-y-3" onSubmit={handleSubmit}>
+      <form className="space-y-3 mt-6" onSubmit={handleSubmit}>
         <div>
           <Label className="text-xs">I am a...</Label>
           <div className="mt-1.5 grid grid-cols-2 gap-2">

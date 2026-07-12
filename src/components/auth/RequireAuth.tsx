@@ -1,39 +1,31 @@
-import { useEffect, type ReactNode } from "react";
-import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
-import { useAuth, dashboardPathForRole, type AppRole } from "@/hooks/use-auth";
+import { ReactNode, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
-export function RequireAuth({
-  children,
-  requireRole,
-}: {
+interface RequireAuthProps {
   children: ReactNode;
-  requireRole?: AppRole;
-}) {
-  const { user, role, loading } = useAuth();
+  allowedRoles?: ("tenant" | "landlord" | "admin" | "verified_landlord")[];
+}
+
+export function RequireAuth({ children, allowedRoles }: RequireAuthProps) {
   const navigate = useNavigate();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // 1. Grab the user data stored from our XAMPP login endpoint
+  const storedUser = localStorage.getItem("keja_user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
 
   useEffect(() => {
-    if (loading) return;
+    // 2. If no user session exists locally, redirect to the login screen
     if (!user) {
-      navigate({ to: "/login", search: { redirect: pathname } as never });
+      navigate({ to: "/auth" }); // or wherever your login route points
       return;
     }
-    if (requireRole && role && role !== requireRole) {
-      navigate({ to: dashboardPathForRole(role) });
+
+    // 3. If roles are restricted and the user doesn't have permissions, redirect
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+      navigate({ to: "/" }); // Send unauthorized users back to the homepage
     }
-  }, [loading, user, role, requireRole, navigate, pathname]);
+  }, [user, navigate, allowedRoles]);
 
-  if (loading || !user) {
-    return (
-      <div className="min-h-screen grid place-items-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (requireRole && role && role !== requireRole) return null;
-
-  return <>{children}</>;
+  // If everything looks golden, render the protected component (like LandlordSidebar/TenantSidebar)
+  return user ? <>{children}</> : null;
 }

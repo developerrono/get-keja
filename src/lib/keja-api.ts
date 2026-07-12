@@ -1,17 +1,106 @@
-import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+const API_BASE = "http://localhost/get-keja-backend";
 
-export type DbProperty = Database["public"]["Tables"]["properties"]["Row"];
-export type DbUnit = Database["public"]["Tables"]["property_units"]["Row"];
-export type DbFavorite = Database["public"]["Tables"]["favorites"]["Row"];
-export type DbVisit = Database["public"]["Tables"]["visits"]["Row"];
-export type DbReview = Database["public"]["Tables"]["reviews"]["Row"];
-export type DbNotification = Database["public"]["Tables"]["notifications"]["Row"];
-export type DbConversation = Database["public"]["Tables"]["conversations"]["Row"];
-export type DbMessage = Database["public"]["Tables"]["messages"]["Row"];
-export type DbTenantPrefs = Database["public"]["Tables"]["tenant_preferences"]["Row"];
-export type DbVerification = Database["public"]["Tables"]["landlord_verifications"]["Row"];
-export type DbReport = Database["public"]["Tables"]["reports"]["Row"];
+export type DbProperty = {
+  id: string;
+  landlord_id: string;
+  name: string;
+  description: string | null;
+  cover_image: string | null;
+  images: string[];
+  county: string;
+  estate: string | null;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  house_type: string;
+  monthly_rent: number;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area_sqm: number | null;
+  amenities: string[];
+  house_rules: string[];
+  nearby: Record<string, unknown>;
+  status: string;
+  featured: boolean;
+  views_count: number;
+  average_rating: number;
+  reviews_count: number;
+  created_at: string;
+  updated_at: string;
+  // Present only on results from get-properties.php, which aggregates
+  // property_units per property to avoid N+1 lookups.
+  units_count?: number;
+  vacant_count?: number;
+  occupied_count?: number;
+  rent_min?: number | null;
+  rent_max?: number | null;
+};
+
+export type DbUnit = {
+  id: string;
+  property_id: string;
+  label: string;
+  is_vacant: boolean;
+  monthly_rent: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+};
+
+export type DbFavorite = { id: string; user_id: string; property_id: string; created_at: string };
+
+export type DbVisit = {
+  id: string; tenant_id: string; property_id: string; unit_id: string | null;
+  scheduled_at: string; notes: string | null; status: string;
+  property_name?: string; cover_image?: string | null; county?: string; estate?: string | null;
+  tenant_name?: string; tenant_phone?: string | null;
+};
+
+export type DbReview = {
+  id: string; property_id: string; tenant_id: string; rating: number;
+  body: string | null; photos: string[]; status: string; created_at: string;
+  property_name?: string; tenant_name?: string;
+};
+
+export type DbNotification = {
+  id: string; user_id: string; type: string; title: string; body: string | null;
+  link: string | null; is_read: boolean; created_at: string;
+};
+
+export type DbConversation = {
+  id: string; tenant_id: string; landlord_id: string; property_id: string | null;
+  last_message_at: string;
+  property_name?: string; cover_image?: string | null;
+  tenant_name?: string; landlord_name?: string;
+};
+
+export type DbMessage = {
+  id: string; conversation_id: string; sender_id: string; body: string | null;
+  image_url: string | null; created_at: string;
+};
+
+export type DbTenantPrefs = {
+  user_id: string; budget_min: number | null; budget_max: number | null;
+  preferred_counties: string[]; preferred_house_types: string[];
+  move_in_date: string | null; notes: string | null;
+};
+
+export type DbVerification = {
+  id: string; landlord_id: string; status: string; admin_notes: string | null;
+  full_name?: string; email?: string; phone?: string | null;
+  landlord?: { full_name: string | null; email: string | null; phone: string | null; avatar_url: string | null };
+};
+
+export type DbReport = {
+  id: string; reporter_id: string; target_type: string; target_id: string;
+  category: string; description: string | null; status: string;
+};
+
+export type DbTenancy = {
+  id: string; property_id: string; unit_id: string | null; tenant_id: string; landlord_id: string;
+  since_date: string; monthly_rent: number; balance: number; status: "active" | "ended";
+  tenant_name: string; tenant_email: string; tenant_phone: string | null;
+  property_name: string; unit_label: string | null;
+};
 
 export const KENYA_COUNTIES = [
   "Nairobi", "Mombasa", "Kisumu", "Nakuru", "Kiambu", "Machakos",
@@ -44,273 +133,311 @@ export type PropertyFilters = {
   sort?: "newest" | "price_asc" | "price_desc" | "rating";
   limit?: number;
   offset?: number;
+  landlord_id?: string | number;
+  /** Pass "all" (e.g. from a landlord's own dashboard) to see every status,
+   *  not just active. Public browsing should leave this unset. */
+  status?: string;
 };
 
+// ---- Small fetch helpers ----
+async function apiGet<T = any>(path: string, params: Record<string, any> = {}): Promise<T> {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
+  });
+  const url = `${API_BASE}/${path}${qs.toString() ? `?${qs.toString()}` : ""}`;
+  const res = await fetch(url);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || "Request failed.");
+  return json;
+}
+
+async function apiPost<T = any>(path: string, body: Record<string, any> = {}): Promise<T> {
+  const res = await fetch(`${API_BASE}/${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || "Request failed.");
+  return json;
+}
+
+// ---- Auth ----
+export async function loginWithXampp(email: string, password: string) {
+  const json = await apiPost("login.php", { email, password });
+  localStorage.setItem("keja_user", JSON.stringify(json.user));
+  return json.user;
+}
+
+export async function signupWithXampp(input: { fullName: string; email: string; password: string; role: "tenant" | "landlord" }) {
+  const json = await apiPost("signup.php", input);
+  localStorage.setItem("keja_user", JSON.stringify(json.user));
+  return json.user;
+}
+
+export function logoutFromXampp() {
+  localStorage.removeItem("keja_user");
+  window.location.href = "/";
+}
+
+export async function requestPasswordReset(email: string) {
+  const json = await apiPost("forgot-password.php", { email });
+  return json.dev_reset_link as string | undefined;
+}
+
+export async function resetPassword(token: string, password: string) {
+  await apiPost("reset-password.php", { token, password });
+}
+
+export async function updateProfile(input: { user_id: string; full_name?: string; phone?: string; bio?: string; avatar_url?: string }) {
+  const json = await apiPost("update-profile.php", input);
+  return json.user;
+}
+
+// ---- Properties ----
 export async function fetchProperties(filters: PropertyFilters = {}) {
-  let q = supabase.from("properties").select("*", { count: "exact" }).eq("status", "active");
-  if (filters.q) q = q.or(`name.ilike.%${filters.q}%,estate.ilike.%${filters.q}%,address.ilike.%${filters.q}%`);
-  if (filters.county) q = q.eq("county", filters.county);
-  if (filters.estate) q = q.ilike("estate", `%${filters.estate}%`);
-  if (filters.house_types?.length) q = q.in("house_type", filters.house_types);
-  if (filters.min_price != null) q = q.gte("monthly_rent", filters.min_price);
-  if (filters.max_price != null) q = q.lte("monthly_rent", filters.max_price);
-  if (filters.bedrooms != null) q = q.gte("bedrooms", filters.bedrooms);
-  if (filters.bathrooms != null) q = q.gte("bathrooms", filters.bathrooms);
-  if (filters.amenities?.length) q = q.contains("amenities", filters.amenities);
-  switch (filters.sort) {
-    case "price_asc": q = q.order("monthly_rent", { ascending: true }); break;
-    case "price_desc": q = q.order("monthly_rent", { ascending: false }); break;
-    case "rating": q = q.order("average_rating", { ascending: false }); break;
-    default: q = q.order("created_at", { ascending: false });
-  }
-  const limit = filters.limit ?? 12;
-  const offset = filters.offset ?? 0;
-  q = q.range(offset, offset + limit - 1);
-  const { data, count, error } = await q;
-  if (error) throw error;
-  return { rows: (data ?? []) as DbProperty[], count: count ?? 0 };
+  const json = await apiGet("get-properties.php", {
+    search: filters.q,
+    county: filters.county,
+    // Note: house_types (multi-select) isn't supported server-side yet;
+    // only the first selected type is applied as a basic filter.
+    house_type: filters.house_types?.[0],
+    min_rent: filters.min_price,
+    max_rent: filters.max_price,
+    landlord_id: filters.landlord_id,
+    status: filters.status,
+    per_page: filters.limit ?? 12,
+    page: filters.offset ? Math.floor(filters.offset / (filters.limit ?? 12)) + 1 : 1,
+  });
+  return { rows: json.data as DbProperty[], count: json.total as number };
 }
 
 export async function fetchPropertyById(id: string) {
-  const [p, units, reviews] = await Promise.all([
-    supabase.from("properties").select("*").eq("id", id).maybeSingle(),
-    supabase.from("property_units").select("*").eq("property_id", id),
-    supabase.from("reviews").select("*").eq("property_id", id).eq("status", "active").order("created_at", { ascending: false }),
-  ]);
-  if (p.error) throw p.error;
-  if (!p.data) return null;
-  // fetch landlord profile
-  const { data: landlord } = await supabase
-    .from("profiles")
-    .select("id, full_name, avatar_url, is_verified, business_name")
-    .eq("id", p.data.landlord_id)
-    .maybeSingle();
-  // bump views (best-effort)
-  supabase.from("properties").update({ views_count: (p.data.views_count ?? 0) + 1 }).eq("id", id).then(() => {}, () => {});
+  const json = await apiGet("get-property.php", { id });
+  const p = json.data;
   return {
-    property: p.data as DbProperty,
-    units: (units.data ?? []) as DbUnit[],
-    reviews: (reviews.data ?? []) as DbReview[],
-    landlord,
+    property: p as DbProperty,
+    units: (p.units ?? []) as DbUnit[],
+    reviews: (p.reviews ?? []) as DbReview[],
+    landlord: p.landlord ?? null,
   };
 }
 
+export type CreatePropertyUnit = {
+  label: string;
+  house_type: string;
+  rent: number;
+  status?: "vacant" | "occupied";
+};
+
+export async function createProperty(input: {
+  landlord_id: string;
+  name: string;
+  description?: string;
+  cover_image?: string;
+  images?: string[];
+  county: string;
+  estate?: string;
+  address?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  amenities?: string[];
+  house_rules?: string[];
+  nearby?: Record<string, unknown>;
+  area_sqm?: number | null;
+  status?: "active" | "inactive" | "draft";
+  units: CreatePropertyUnit[];
+}) {
+  const json = await apiPost("create-property.php", input);
+  return json.id as string;
+}
+
+/** General field edit on a property the caller owns (name, pricing, location, etc). */
+export async function updateProperty(id: string, patch: Partial<DbProperty>) {
+  await apiPost("update-property.php", { id, ...patch });
+}
+
+/** Bulk-mark every unit on a property vacant or occupied. */
+export async function setPropertyUnitsStatus(id: string, status: "vacant" | "occupied") {
+  await apiPost("update-property.php", { id, set_all_units_status: status });
+}
+
+export async function deleteProperty(id: string, landlordId: string) {
+  await apiPost("delete-property.php", { id, landlord_id: landlordId });
+}
+
+// ---- Favorites ----
 export async function listFavorites(userId: string) {
-  const { data, error } = await supabase
-    .from("favorites")
-    .select("*, properties(*)")
-    .eq("user_id", userId);
-  if (error) throw error;
-  return data ?? [];
+  const json = await apiGet("get-favorites.php", { user_id: userId });
+  return json.data as (DbProperty & { favorite_id: string; favorited_at: string })[];
 }
 
 export async function toggleFavorite(userId: string, propertyId: string) {
-  const { data: existing } = await supabase
-    .from("favorites")
-    .select("id")
-    .eq("user_id", userId).eq("property_id", propertyId).maybeSingle();
-  if (existing) {
-    await supabase.from("favorites").delete().eq("id", existing.id);
-    return false;
-  }
-  await supabase.from("favorites").insert({ user_id: userId, property_id: propertyId });
-  return true;
+  const json = await apiPost("toggle-favorite.php", { user_id: userId, property_id: propertyId });
+  return json.favorited as boolean;
 }
 
+// ---- Tenant preferences ----
 export async function fetchTenantPrefs(userId: string) {
-  const { data } = await supabase.from("tenant_preferences").select("*").eq("user_id", userId).maybeSingle();
-  return data as DbTenantPrefs | null;
+  const json = await apiGet("tenant-prefs.php", { user_id: userId });
+  return json.data as DbTenantPrefs | null;
 }
 
 export async function upsertTenantPrefs(userId: string, patch: Partial<DbTenantPrefs>) {
-  const { data, error } = await supabase
-    .from("tenant_preferences")
-    .upsert({ user_id: userId, ...patch }, { onConflict: "user_id" })
-    .select().maybeSingle();
-  if (error) throw error;
-  return data as DbTenantPrefs;
+  await apiPost("tenant-prefs.php", { user_id: userId, ...patch });
 }
 
+// ---- Visits ----
 export async function bookVisit(input: {
   tenant_id: string; property_id: string; unit_id?: string | null;
   scheduled_at: string; notes?: string;
 }) {
-  const { error } = await supabase.from("visits").insert(input);
-  if (error) throw error;
+  await apiPost("visits.php", { action: "book", ...input });
 }
 
 export async function listVisits(tenantId: string) {
-  const { data, error } = await supabase
-    .from("visits")
-    .select("*, properties(id, name, cover_image, county, estate)")
-    .eq("tenant_id", tenantId)
-    .order("scheduled_at", { ascending: true });
-  if (error) throw error;
-  return data ?? [];
+  const json = await apiGet("visits.php", { tenant_id: tenantId });
+  return json.data as DbVisit[];
+}
+
+export async function listVisitsForLandlord(landlordId: string) {
+  const json = await apiGet("visits.php", { landlord_id: landlordId });
+  return json.data as DbVisit[];
 }
 
 export async function updateVisitStatus(id: string, status: string) {
-  const { error } = await supabase.from("visits").update({ status }).eq("id", id);
-  if (error) throw error;
+  await apiPost("visits.php", { action: "update_status", id, status });
 }
 
+// ---- Notifications ----
 export async function listNotifications(userId: string) {
-  const { data, error } = await supabase
-    .from("notifications").select("*").eq("user_id", userId)
-    .order("created_at", { ascending: false }).limit(50);
-  if (error) throw error;
-  return (data ?? []) as DbNotification[];
+  const json = await apiGet("notifications.php", { user_id: userId });
+  // keep a `.read` alias for components written against the older shape
+  return (json.data as DbNotification[]).map((n) => ({ ...n, read: n.is_read }));
 }
 
 export async function markNotificationRead(id: string) {
-  await supabase.from("notifications").update({ read: true }).eq("id", id);
+  await apiPost("notifications.php", { id });
+}
+
+// ---- Reviews ----
+export async function listMyReviews(tenantId: string) {
+  const json = await apiGet("reviews.php", { tenant_id: tenantId });
+  return json.data as DbReview[];
 }
 
 export async function submitReview(input: {
   property_id: string; tenant_id: string; rating: number; body?: string; photos?: string[];
 }) {
-  const { error } = await supabase.from("reviews").upsert(input, { onConflict: "property_id,tenant_id" });
-  if (error) throw error;
+  await apiPost("reviews.php", input);
 }
 
+export async function deleteReview(id: string) {
+  await apiPost("reviews.php", { action: "delete", id });
+}
+
+// ---- Reports ----
 export async function submitReport(input: {
   reporter_id: string; target_type: "property" | "user" | "review";
   target_id: string; category: string; description?: string;
 }) {
-  const { error } = await supabase.from("reports").insert(input);
-  if (error) throw error;
+  await apiPost("reports.php", input);
 }
 
+// ---- Messaging ----
 export async function getOrCreateConversation(tenantId: string, landlordId: string, propertyId?: string | null) {
-  const { data: existing } = await supabase
-    .from("conversations")
-    .select("*")
-    .eq("tenant_id", tenantId).eq("landlord_id", landlordId)
-    .maybeSingle();
-  if (existing) return existing as DbConversation;
-  const { data, error } = await supabase
-    .from("conversations")
-    .insert({ tenant_id: tenantId, landlord_id: landlordId, property_id: propertyId ?? null })
-    .select().single();
-  if (error) throw error;
-  return data as DbConversation;
+  const json = await apiPost("messaging.php", {
+    action: "get_or_create_conversation",
+    tenant_id: tenantId, landlord_id: landlordId, property_id: propertyId ?? null,
+  });
+  return json.data as DbConversation;
 }
 
 export async function listConversations(userId: string) {
-  const { data, error } = await supabase
-    .from("conversations")
-    .select("*, properties(id, name, cover_image), tenant:profiles!conversations_tenant_id_fkey(id, full_name, avatar_url), landlord:profiles!conversations_landlord_id_fkey(id, full_name, avatar_url)")
-    .or(`tenant_id.eq.${userId},landlord_id.eq.${userId}`)
-    .order("last_message_at", { ascending: false });
-  if (error) throw error;
-  return data ?? [];
+  const json = await apiGet("messaging.php", { action: "list_conversations", user_id: userId });
+  return json.data as DbConversation[];
 }
 
 export async function listMessages(conversationId: string) {
-  const { data, error } = await supabase.from("messages")
-    .select("*").eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
-  if (error) throw error;
-  return (data ?? []) as DbMessage[];
+  const json = await apiGet("messaging.php", { action: "list_messages", conversation_id: conversationId });
+  return json.data as DbMessage[];
 }
 
 export async function sendMessage(conversationId: string, senderId: string, body: string, imageUrl?: string) {
-  const { error } = await supabase.from("messages")
-    .insert({ conversation_id: conversationId, sender_id: senderId, body, image_url: imageUrl ?? null });
-  if (error) throw error;
-  await supabase.from("conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
+  await apiPost("messaging.php", {
+    action: "send_message", conversation_id: conversationId, sender_id: senderId, body, image_url: imageUrl ?? null,
+  });
 }
 
-/* Admin helpers */
+// ---- Tenancies ----
+export async function listTenancies(landlordId: string) {
+  const json = await apiGet("tenancies.php", { landlord_id: landlordId });
+  return json.data as DbTenancy[];
+}
+
+export async function createTenancy(input: {
+  property_id: string; unit_id?: string | null; tenant_id: string; landlord_id: string;
+  since_date: string; monthly_rent: number;
+}) {
+  await apiPost("tenancies.php", { action: "create", ...input });
+}
+
+export async function updateTenancy(id: string, patch: { balance?: number; status?: "active" | "ended" }) {
+  await apiPost("tenancies.php", { action: "update", id, ...patch });
+}
+
+/* -------------------- Admin helpers -------------------- */
 
 export async function adminStats() {
-  const [users, roles, properties, verifs, reports, reviews] = await Promise.all([
-    supabase.from("profiles").select("id", { count: "exact", head: true }),
-    supabase.from("user_roles").select("role"),
-    supabase.from("properties").select("id, status", { count: "exact" }),
-    supabase.from("landlord_verifications").select("status"),
-    supabase.from("reports").select("status", { count: "exact", head: false }),
-    supabase.from("reviews").select("id", { count: "exact", head: true }),
-  ]);
-  const roleCounts = (roles.data ?? []).reduce<Record<string, number>>((a, r) => {
-    a[r.role] = (a[r.role] ?? 0) + 1; return a;
-  }, {});
-  const propStatus = (properties.data ?? []).reduce<Record<string, number>>((a, p) => {
-    a[p.status] = (a[p.status] ?? 0) + 1; return a;
-  }, {});
-  const verifStatus = (verifs.data ?? []).reduce<Record<string, number>>((a, v) => {
-    a[v.status] = (a[v.status] ?? 0) + 1; return a;
-  }, {});
-  return {
-    totalUsers: users.count ?? 0,
-    totalLandlords: (roleCounts.landlord ?? 0) + (roleCounts.verified_landlord ?? 0),
-    verifiedLandlords: roleCounts.verified_landlord ?? 0,
-    pendingVerifications: verifStatus.pending ?? 0,
-    totalProperties: properties.count ?? 0,
-    activeListings: propStatus.active ?? 0,
-    flaggedListings: propStatus.hidden ?? 0,
-    openReports: (reports.data ?? []).filter((r) => r.status === "open").length,
-    totalReviews: reviews.count ?? 0,
-  };
+  const json = await apiGet("admin.php", { action: "stats" });
+  return json.data;
 }
 
 export async function adminListUsers() {
-  const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
-  const { data: roles } = await supabase.from("user_roles").select("user_id, role");
-  const byId = new Map<string, string[]>();
-  (roles ?? []).forEach((r) => {
-    const arr = byId.get(r.user_id) ?? [];
-    arr.push(r.role); byId.set(r.user_id, arr);
-  });
-  return (data ?? []).map((u) => ({ ...u, roles: byId.get(u.id) ?? [] }));
+  const json = await apiGet("admin.php", { action: "list_users" });
+  return json.data;
 }
 
 export async function adminListVerifications() {
-  const { data } = await supabase
-    .from("landlord_verifications")
-    .select("*, landlord:profiles!landlord_verifications_landlord_id_fkey(id, full_name, email, avatar_url, phone)")
-    .order("created_at", { ascending: false });
-  return data ?? [];
+  const json = await apiGet("admin.php", { action: "list_verifications" });
+  return json.data as DbVerification[];
 }
 
 export async function adminUpdateVerification(id: string, patch: Partial<DbVerification>, reviewerId: string) {
-  const { error } = await supabase.from("landlord_verifications")
-    .update({ ...patch, reviewed_by: reviewerId, reviewed_at: new Date().toISOString() })
-    .eq("id", id);
-  if (error) throw error;
+  await apiPost("admin.php", { action: "update_verification", id, reviewer_id: reviewerId, ...patch });
 }
 
 export async function adminListReports() {
-  const { data } = await supabase.from("reports").select("*").order("created_at", { ascending: false });
-  return (data ?? []) as DbReport[];
+  const json = await apiGet("admin.php", { action: "list_reports" });
+  return json.data as DbReport[];
 }
 
 export async function adminUpdateReport(id: string, patch: Partial<DbReport>) {
-  const { error } = await supabase.from("reports").update(patch).eq("id", id);
-  if (error) throw error;
+  await apiPost("admin.php", { action: "update_report", id, ...patch });
 }
 
 export async function adminListProperties() {
-  const { data } = await supabase.from("properties").select("*").order("created_at", { ascending: false });
-  return (data ?? []) as DbProperty[];
+  const json = await apiGet("admin.php", { action: "list_properties" });
+  return json.data as DbProperty[];
 }
 
+/** NOTE: as of the current admin.php, this only persists `status` — a
+ *  `featured` patch will be silently ignored server-side until admin.php's
+ *  update_property action is extended to handle it too. */
 export async function adminUpdateProperty(id: string, patch: Partial<DbProperty>) {
-  const { error } = await supabase.from("properties").update(patch).eq("id", id);
-  if (error) throw error;
+  await apiPost("admin.php", { action: "update_property", id, ...patch });
 }
 
 export async function adminListReviews() {
-  const { data } = await supabase.from("reviews").select("*").order("created_at", { ascending: false });
-  return (data ?? []) as DbReview[];
+  const json = await apiGet("admin.php", { action: "list_reviews" });
+  return json.data as DbReview[];
 }
 
 export async function adminUpdateReviewStatus(id: string, status: "active" | "hidden" | "deleted") {
-  const { error } = await supabase.from("reviews").update({ status }).eq("id", id);
-  if (error) throw error;
+  await apiPost("admin.php", { action: "update_review_status", id, status });
 }
 
 export async function adminBroadcast(input: { author_id: string; category: string; title: string; body: string }) {
-  const { error } = await supabase.from("admin_announcements").insert(input);
-  if (error) throw error;
+  await apiPost("admin.php", { action: "broadcast", ...input });
 }

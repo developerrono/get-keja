@@ -1,14 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navbar } from "@/components/site/Navbar";
 import { Footer } from "@/components/site/Footer";
 import { PropertyCard } from "@/components/site/PropertyCard";
-import { properties } from "@/lib/properties";
+import { getProperties, type Property } from "@/lib/properties";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { SlidersHorizontal } from "lucide-react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+
+const [properties, setProperties] = useState<Property[]>([]);
+
+useEffect(() => {
+  async function loadProperties() {
+    const data = await getProperties();
+    setProperties(data);
+  }
+
+  loadProperties();
+}, []);
 
 export const Route = createFileRoute("/listings")({
   head: () => ({

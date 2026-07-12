@@ -23,14 +23,7 @@ export type Database = {
           id: string
           title: string
         }
-        Insert: {
-          author_id: string
-          body: string
-          category: string
-          created_at?: string
-          id?: string
-          title: string
-        }
+        Insert: { }
         Update: {
           author_id?: string
           body?: string

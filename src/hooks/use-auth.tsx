@@ -7,8 +7,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
 
 export type AppRole = "tenant" | "landlord" | "admin";
 
@@ -21,8 +19,8 @@ export type Profile = {
 };
 
 type AuthState = {
-  user: User | null;
-  session: Session | null;
+  user: any | null;
+  session: any | null;
   profile: Profile | null;
   role: AppRole | null;
   loading: boolean;
@@ -33,72 +31,77 @@ type AuthState = {
 const AuthContext = createContext<AuthState | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadUserData = useCallback(async (userId: string) => {
-    const [{ data: prof }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", userId),
-    ]);
-    setProfile((prof as Profile) ?? null);
-    const primary =
-      (roles?.find((r) => r.role === "admin")?.role as AppRole) ??
-      (roles?.[0]?.role as AppRole) ??
-      null;
-    setRole(primary);
+  // Load user data directly out of XAMPP local session tokens
+  const syncLocalAuth = useCallback(() => {
+    const storedUser = localStorage.getItem("keja_user");
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setRole(userData.role as AppRole);
+        setProfile({
+          id: userData.id,
+          full_name: userData.fullName || userData.full_name || null,
+          email: userData.email,
+          avatar_url: userData.avatarUrl || null,
+          phone: userData.phone || null,
+        });
+      } catch (e) {
+        console.error("Failed to parse local user data", e);
+        localStorage.removeItem("keja_user");
+      }
+    } else {
+      setUser(null);
+      setProfile(null);
+      setRole(null);
+    }
+    setLoading(false);
   }, []);
 
-  const refresh = useCallback(async () => {
-    if (session?.user) await loadUserData(session.user.id);
-  }, [session, loadUserData]);
-
   useEffect(() => {
-    // Set listener FIRST, then fetch existing session
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      if (newSession?.user) {
-        // defer profile fetch to avoid deadlocks inside the callback
-        setTimeout(() => {
-          loadUserData(newSession.user.id);
-        }, 0);
-      } else {
-        setProfile(null);
-        setRole(null);
+    // Synchronize authentication on mount
+    syncLocalAuth();
+
+    // Listen for cross-tab logins or logouts automatically
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "keja_user") {
+        syncLocalAuth();
       }
-    });
+    };
 
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session?.user) loadUserData(data.session.user.id);
-      setLoading(false);
-    });
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [syncLocalAuth]);
 
-    return () => subscription.unsubscribe();
-  }, [loadUserData]);
+  const refresh = useCallback(async () => {
+    syncLocalAuth();
+  }, [syncLocalAuth]);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
-    setSession(null);
+    localStorage.removeItem("keja_user");
+    setUser(null);
     setProfile(null);
     setRole(null);
+    // Hard refresh back to login route to completely flush route memory
+    window.location.href = "/login";
   }, []);
 
   const value = useMemo<AuthState>(
     () => ({
-      user: session?.user ?? null,
-      session,
+      user,
+      session: user ? { user } : null, // Mocked session block for compatibility matches
       profile,
       role,
       loading,
       signOut,
       refresh,
     }),
-    [session, profile, role, loading, signOut, refresh],
+    [user, profile, role, loading, signOut, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
