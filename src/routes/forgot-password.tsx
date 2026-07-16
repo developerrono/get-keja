@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/auth/AuthLayout";
-import { supabase } from "@/integrations/supabase/client";
 
 const schema = z.object({ email: z.string().trim().email("Enter a valid email").max(255) });
 
@@ -20,6 +19,7 @@ function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const [devLink, setDevLink] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,16 +29,23 @@ function ForgotPasswordPage() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setSubmitting(false);
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      const res = await fetch("http://localhost/get-keja-backend/forgot-password.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: parsed.data.email }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+
+      setDevLink(json.dev_reset_link ?? null);
+      setSent(true);
+      toast.success("Reset link generated.");
+    } catch (err: any) {
+      toast.error(err.message || "Could not process request.");
+    } finally {
+      setSubmitting(false);
     }
-    setSent(true);
-    toast.success("Reset link sent. Check your inbox.");
   };
 
   return (
@@ -48,16 +55,24 @@ function ForgotPasswordPage() {
       </Link>
       <h1 className="font-display text-3xl font-bold mt-4">Reset your password</h1>
       <p className="text-sm text-muted-foreground mt-1">
-        Enter your email and we'll send you a secure reset link.
+        Enter your email and we'll generate a secure reset link.
       </p>
 
       {sent ? (
-        <div className="mt-8 rounded-xl border border-border bg-primary-soft p-5 text-sm">
-          <p className="font-semibold">Check your inbox 📬</p>
-          <p className="text-muted-foreground mt-1">
-            We sent a reset link to <span className="text-foreground font-medium">{email}</span>.
-            The link expires in 1 hour.
+        <div className="mt-8 rounded-xl border border-border bg-primary-soft p-5 text-sm space-y-3">
+          <p className="font-semibold">Link generated 📬</p>
+          <p className="text-muted-foreground">
+            If <span className="text-foreground font-medium">{email}</span> is registered, a reset link
+            was created. It expires in 1 hour.
           </p>
+          {devLink && (
+            <div className="rounded-lg bg-background border border-border p-3">
+              <p className="text-xs text-muted-foreground mb-1">
+                Dev mode: no email server is configured, so here's the link directly —
+              </p>
+              <a href={devLink} className="text-xs text-accent break-all underline">{devLink}</a>
+            </div>
+          )}
         </div>
       ) : (
         <form className="mt-8 space-y-3" onSubmit={handleSubmit}>

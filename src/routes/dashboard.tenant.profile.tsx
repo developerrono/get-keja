@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,16 +17,38 @@ function TenantProfile() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (profile) { setName(profile.full_name ?? ""); setPhone(profile.phone ?? ""); }
-    if (user) supabase.from("profiles").select("bio").eq("id", user.id).maybeSingle().then(({ data }) => setBio(data?.bio ?? ""));
-  }, [profile, user]);
+    if (profile) {
+      setName(profile.full_name ?? "");
+      setPhone(profile.phone ?? "");
+    }
+  }, [profile]);
 
   const save = async () => {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ full_name, phone, bio }).eq("id", user.id);
-    if (error) toast.error(error.message); else { toast.success("Profile updated"); await refresh(); }
-    setSaving(false);
+    try {
+      const res = await fetch("http://localhost/get-keja-backend/update-profile.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id, full_name, phone, bio }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+
+      // Keep localStorage (and thus useAuth) in sync with the update
+      const stored = localStorage.getItem("keja_user");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        localStorage.setItem("keja_user", JSON.stringify({ ...parsed, fullName: full_name, phone, bio }));
+      }
+
+      toast.success("Profile updated");
+      await refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Could not update profile.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

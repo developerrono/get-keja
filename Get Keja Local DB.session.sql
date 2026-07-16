@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS tenancies (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  property_id INT NOT NULL,
+  unit_id INT NULL,
+  tenant_id INT NOT NULL,
+  landlord_id INT NOT NULL,
+  since_date DATE NOT NULL,
+  monthly_rent DECIMAL(12,2) NOT NULL,
+  balance DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active','ended')),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (property_id) REFERENCES properties(id) ON DELETE CASCADE,
+  FOREIGN KEY (unit_id) REFERENCES property_units(id) ON DELETE SET NULL,
+  FOREIGN KEY (tenant_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (landlord_id) REFERENCES users(id) ON DELETE CASCADE
+);

@@ -4,13 +4,9 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
-  HeadContent,
-  Scripts,
 } from "@tanstack/react-router";
 import { AuthProvider } from "@/hooks/use-auth";
 import { Toaster } from "@/components/ui/sonner";
-
-import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
@@ -70,55 +66,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Get Keja Find Your Next Keja Easily" },
-      { name: "description", content: "Get Keja is a modern rental house hunting platform that connects tenants with landlords and property managers through real-time listings. Users can search avail" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Get Keja Find Your Next Keja Easily" },
-      { property: "og:description", content: "Get Keja is a modern rental house hunting platform that connects tenants with landlords and property managers through real-time listings. Users can search avail" },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Get Keja Find Your Next Keja Easily" },
-      { name: "twitter:description", content: "Get Keja is a modern rental house hunting platform that connects tenants with landlords and property managers through real-time listings. Users can search avail" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/BKpMKMppDORZ4tUk47rp3rP1P9T2/social-images/social-1779641447540-GetKeja_Logo.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/BKpMKMppDORZ4tUk47rp3rP1P9T2/social-images/social-1779641447540-GetKeja_Logo.webp" },
-    ],
-    links: [
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
-      },
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-    ],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();

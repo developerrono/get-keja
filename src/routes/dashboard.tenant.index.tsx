@@ -20,7 +20,7 @@ function TenantHome() {
   useEffect(() => {
     if (!user) return;
     fetchProperties({ limit: 6, sort: "newest" }).then((r) => setRecs(r.rows));
-    listFavorites(user.id).then((f) => { setFavIds(new Set(f.map((x) => x.property_id))); setCounts((c) => ({ ...c, saved: f.length })); });
+    listFavorites(user.id).then((f) => { setFavIds(new Set(f.map((x) => x.id))); setCounts((c) => ({ ...c, saved: f.length })); });
     listVisits(user.id).then((v) => setCounts((c) => ({ ...c, visits: v.length })));
     listNotifications(user.id).then((n) => setCounts((c) => ({ ...c, notifs: n.filter((x) => !x.read).length })));
   }, [user]);

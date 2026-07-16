@@ -10,17 +10,6 @@ import { Input } from "@/components/ui/input";
 import { SlidersHorizontal } from "lucide-react";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 
-const [properties, setProperties] = useState<Property[]>([]);
-
-useEffect(() => {
-  async function loadProperties() {
-    const data = await getProperties();
-    setProperties(data);
-  }
-
-  loadProperties();
-}, []);
-
 export const Route = createFileRoute("/listings")({
   head: () => ({
     meta: [
@@ -38,6 +27,18 @@ export const Route = createFileRoute("/listings")({
 const amenityOptions = ["WiFi", "Parking", "Furnished", "Water", "Security", "Pool"];
 
 function ListingsPage() {
+  // Moved inside the component — hooks must only run during render,
+  // never at module scope, or React's dispatcher is null and crashes.
+  const [properties, setProperties] = useState<Property[]>([]);
+
+  useEffect(() => {
+    async function loadProperties() {
+      const data = await getProperties();
+      setProperties(data);
+    }
+    loadProperties();
+  }, []);
+
   const [maxPrice, setMaxPrice] = useState(100000);
   const [bedrooms, setBedrooms] = useState<number | null>(null);
   const [amenities, setAmenities] = useState<string[]>([]);
@@ -54,7 +55,7 @@ function ListingsPage() {
             p.location.toLowerCase().includes(query.toLowerCase())) &&
           amenities.every((a) => p.amenities.includes(a))
       ),
-    [maxPrice, bedrooms, amenities, query]
+    [properties, maxPrice, bedrooms, amenities, query]
   );
 
   return (

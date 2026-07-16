@@ -12,7 +12,7 @@ function Favorites() {
   const [items, setItems] = useState<DbProperty[]>([]);
   useEffect(() => {
     if (!user) return;
-    listFavorites(user.id).then((f) => setItems(f.map((x) => x.properties as unknown as DbProperty).filter(Boolean)));
+    listFavorites(user.id).then((f) => setItems(f as DbProperty[]));
   }, [user]);
 
   return (

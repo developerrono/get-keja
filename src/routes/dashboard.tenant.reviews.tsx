@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Star, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import type { DbReview } from "@/lib/keja-api";
+import { deleteReview, type DbReview } from "@/lib/keja-api";
 
 export const Route = createFileRoute("/dashboard/tenant/reviews")({ component: MyReviews });
 
@@ -14,14 +13,28 @@ function MyReviews() {
 
   const load = async () => {
     if (!user) return;
-    const { data } = await supabase.from("reviews").select("*").eq("tenant_id", user.id).order("created_at", { ascending: false });
-    setItems((data ?? []) as DbReview[]);
+    try {
+      const res = await fetch(
+        `http://localhost/get-keja-backend/reviews.php?tenant_id=${user.id}`
+      );
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+      setItems(json.data ?? []);
+    } catch {
+      toast.error("Could not load your reviews.");
+    }
   };
+
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
 
   const remove = async (id: string) => {
-    await supabase.from("reviews").delete().eq("id", id);
-    toast.success("Review deleted"); load();
+    try {
+      await deleteReview(id);
+      toast.success("Review deleted");
+      load();
+    } catch {
+      toast.error("Could not delete review.");
+    }
   };
 
   return (

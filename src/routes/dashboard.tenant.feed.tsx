@@ -18,7 +18,7 @@ function Feed() {
   const [favIds, setFavIds] = useState<Set<string>>(new Set());
   const pageSize = 12;
 
-  useEffect(() => { if (user) listFavorites(user.id).then((f) => setFavIds(new Set(f.map((x) => x.property_id)))); }, [user]);
+  useEffect(() => { if (user) listFavorites(user.id).then((f) => setFavIds(new Set(f.map((x) => x.id)))); }, [user]);
 
   const load = async (from = 0) => {
     setLoading(true);
