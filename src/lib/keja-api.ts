@@ -327,6 +327,11 @@ export async function listMyReviews(tenantId: string) {
   return json.data as DbReview[];
 }
 
+export async function listReviewsForLandlord(landlordId: string) {
+  const json = await apiGet("reviews.php", { landlord_id: landlordId });
+  return json.data as DbReview[];
+}
+
 export async function submitReview(input: {
   property_id: string; tenant_id: string; rating: number; body?: string; photos?: string[];
 }) {

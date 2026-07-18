@@ -1,7 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { landlordProperties, type LandlordProperty, HOUSE_TYPES } from "@/lib/landlord-data";
-import { formatKsh } from "@/lib/properties";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  fetchProperties,
+  setPropertyUnitsStatus,
+  deleteProperty,
+  HOUSE_TYPES,
+  formatKsh,
+  type DbProperty,
+} from "@/lib/keja-api";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Eye, Pencil, Trash2, MapPin, DoorOpen, DoorClosed, Search } from "lucide-react";
+import { Eye, Pencil, Trash2, MapPin, DoorOpen, DoorClosed, Search, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/landlord/properties")({
@@ -20,44 +27,82 @@ export const Route = createFileRoute("/dashboard/landlord/properties")({
 });
 
 function PropertiesPage() {
-  const [items, setItems] = useState<LandlordProperty[]>(landlordProperties);
+  const { profile } = useAuth();
+  const [items, setItems] = useState<DbProperty[]>([]);
+  const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [county, setCounty] = useState("all");
   const [estate, setEstate] = useState("all");
   const [type, setType] = useState("all");
   const [vacancy, setVacancy] = useState("all");
   const [sort, setSort] = useState("name");
+  const [busyId, setBusyId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    setLoading(true);
+    fetchProperties({ landlord_id: profile.id, status: "all", limit: 100 })
+      .then(({ rows }) => setItems(rows))
+      .catch((err) => toast.error(err instanceof Error ? err.message : "Failed to load properties."))
+      .finally(() => setLoading(false));
+  }, [profile?.id]);
 
   const counties = useMemo(() => Array.from(new Set(items.map((i) => i.county))), [items]);
-  const estates = useMemo(() => Array.from(new Set(items.map((i) => i.estate))), [items]);
+  const estates = useMemo(() => Array.from(new Set(items.map((i) => i.estate).filter(Boolean) as string[])), [items]);
 
   const filtered = useMemo(() => {
     let arr = items.filter((p) => {
-      const vac = p.units.filter((u) => u.status === "vacant").length;
+      const vac = p.vacant_count ?? 0;
       if (q && !p.name.toLowerCase().includes(q.toLowerCase())) return false;
       if (county !== "all" && p.county !== county) return false;
       if (estate !== "all" && p.estate !== estate) return false;
-      if (type !== "all" && p.type !== type) return false;
+      if (type !== "all" && p.house_type !== type) return false;
       if (vacancy === "vacant" && vac === 0) return false;
       if (vacancy === "full" && vac > 0) return false;
       return true;
     });
     if (sort === "name") arr = [...arr].sort((a, b) => a.name.localeCompare(b.name));
-    if (sort === "rent") arr = [...arr].sort((a, b) => (a.units[0]?.rent ?? 0) - (b.units[0]?.rent ?? 0));
-    if (sort === "units") arr = [...arr].sort((a, b) => b.units.length - a.units.length);
+    if (sort === "rent") arr = [...arr].sort((a, b) => (a.rent_min ?? a.monthly_rent ?? 0) - (b.rent_min ?? b.monthly_rent ?? 0));
+    if (sort === "units") arr = [...arr].sort((a, b) => (b.units_count ?? 0) - (a.units_count ?? 0));
     return arr;
   }, [items, q, county, estate, type, vacancy, sort]);
 
-  const setAllUnits = (id: string, status: "vacant" | "occupied") => {
-    setItems((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, units: p.units.map((u) => ({ ...u, status })) } : p)),
-    );
-    toast.success(`All units marked ${status}`);
+  const setAllUnits = async (id: string, status: "vacant" | "occupied") => {
+    setBusyId(id);
+    try {
+      await setPropertyUnitsStatus(id, status);
+      setItems((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                vacant_count: status === "vacant" ? p.units_count ?? 0 : 0,
+                occupied_count: status === "occupied" ? p.units_count ?? 0 : 0,
+              }
+            : p,
+        ),
+      );
+      toast.success(`All units marked ${status}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update units.");
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  const remove = (id: string) => {
-    setItems((prev) => prev.filter((p) => p.id !== id));
-    toast.success("Property deleted");
+  const remove = async (id: string) => {
+    if (!profile?.id) return;
+    if (!window.confirm("Delete this property and all its units? This can't be undone.")) return;
+    setBusyId(id);
+    try {
+      await deleteProperty(id, profile.id);
+      setItems((prev) => prev.filter((p) => p.id !== id));
+      toast.success("Property deleted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete property.");
+    } finally {
+      setBusyId(null);
+    }
   };
 
   return (
@@ -124,66 +169,95 @@ function PropertiesPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((p) => {
-          const vacant = p.units.filter((u) => u.status === "vacant").length;
-          const occupied = p.units.length - vacant;
-          const rentFrom = Math.min(...p.units.map((u) => u.rent));
-          return (
-            <article key={p.id} className="rounded-2xl border border-border bg-card overflow-hidden shadow-soft flex flex-col">
-              <div className="relative aspect-[16/10] overflow-hidden">
-                <img src={p.cover} alt={p.name} className="h-full w-full object-cover" loading="lazy" />
-                <span className={`absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-full ${vacant > 0 ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}`}>
-                  {vacant > 0 ? `${vacant} vacant` : "Fully occupied"}
-                </span>
-              </div>
-              <div className="p-5 flex-1 flex flex-col">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="font-display font-bold truncate">{p.name}</h3>
-                    <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <MapPin className="h-3 w-3" /> {p.estate}, {p.town}
+      {loading ? (
+        <div className="mt-10 grid place-items-center text-sm text-muted-foreground gap-2 py-16">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          Loading your properties…
+        </div>
+      ) : items.length === 0 ? (
+        <div className="mt-10 rounded-2xl border border-dashed border-border p-10 text-center">
+          <p className="text-sm text-muted-foreground">You haven't added any properties yet.</p>
+          <Link to={"/dashboard/landlord/add-property" as never}>
+            <Button className="mt-4 rounded-full">Add your first property</Button>
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((p) => {
+            const vacant = p.vacant_count ?? 0;
+            const occupied = p.occupied_count ?? 0;
+            const unitsCount = p.units_count ?? 0;
+            const rentFrom = p.rent_min ?? p.monthly_rent;
+            const isBusy = busyId === p.id;
+            return (
+              <article key={p.id} className="rounded-2xl border border-border bg-card overflow-hidden shadow-soft flex flex-col">
+                <div className="relative aspect-[16/10] overflow-hidden bg-surface">
+                  {p.cover_image ? (
+                    <img src={p.cover_image} alt={p.name} className="h-full w-full object-cover" loading="lazy" />
+                  ) : (
+                    <div className="h-full w-full grid place-items-center text-xs text-muted-foreground">No cover photo</div>
+                  )}
+                  <span className={`absolute top-3 left-3 text-[11px] font-bold px-2.5 py-1 rounded-full ${vacant > 0 ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}`}>
+                    {vacant > 0 ? `${vacant} vacant` : "Fully occupied"}
+                  </span>
+                  {p.status !== "active" && (
+                    <span className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-full bg-destructive/90 text-white capitalize">
+                      {p.status}
+                    </span>
+                  )}
+                </div>
+                <div className="p-5 flex-1 flex flex-col">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-display font-bold truncate">{p.name}</h3>
+                      <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <MapPin className="h-3 w-3" /> {p.estate ?? "—"}, {p.county}
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary-soft text-primary shrink-0">{p.house_type}</span>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-surface p-2">
+                      <div className="text-[10px] text-muted-foreground uppercase">Units</div>
+                      <div className="font-bold">{unitsCount}</div>
+                    </div>
+                    <div className="rounded-xl bg-accent-soft p-2">
+                      <div className="text-[10px] text-accent uppercase">Vacant</div>
+                      <div className="font-bold text-accent">{vacant}</div>
+                    </div>
+                    <div className="rounded-xl bg-primary-soft p-2">
+                      <div className="text-[10px] text-primary uppercase">Occupied</div>
+                      <div className="font-bold text-primary">{occupied}</div>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-primary-soft text-primary shrink-0">{p.type}</span>
-                </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl bg-surface p-2">
-                    <div className="text-[10px] text-muted-foreground uppercase">Units</div>
-                    <div className="font-bold">{p.units.length}</div>
+                  <div className="mt-4 text-sm">
+                    <span className="text-muted-foreground">From </span>
+                    <span className="font-bold">{formatKsh(rentFrom)}</span>
+                    <span className="text-muted-foreground text-xs">/mo</span>
                   </div>
-                  <div className="rounded-xl bg-accent-soft p-2">
-                    <div className="text-[10px] text-accent uppercase">Vacant</div>
-                    <div className="font-bold text-accent">{vacant}</div>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <Link to={`/property/${p.id}` as never}>
+                      <Button variant="outline" size="sm" className="gap-1 w-full"><Eye className="h-3.5 w-3.5" /> View</Button>
+                    </Link>
+                    <Button variant="outline" size="sm" className="gap-1" onClick={() => toast.info("Edit form coming soon")}>
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" className="gap-1 text-accent" disabled={isBusy} onClick={() => setAllUnits(p.id, "vacant")}>
+                      <DoorOpen className="h-3.5 w-3.5" /> Mark vacant
+                    </Button>
+                    <Button variant="ghost" size="sm" className="gap-1 text-primary" disabled={isBusy} onClick={() => setAllUnits(p.id, "occupied")}>
+                      <DoorClosed className="h-3.5 w-3.5" /> Mark occupied
+                    </Button>
+                    <Button variant="ghost" size="sm" className="gap-1 text-destructive col-span-2" disabled={isBusy} onClick={() => remove(p.id)}>
+                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                    </Button>
                   </div>
-                  <div className="rounded-xl bg-primary-soft p-2">
-                    <div className="text-[10px] text-primary uppercase">Occupied</div>
-                    <div className="font-bold text-primary">{occupied}</div>
-                  </div>
                 </div>
-                <div className="mt-4 text-sm">
-                  <span className="text-muted-foreground">From </span>
-                  <span className="font-bold">{formatKsh(rentFrom)}</span>
-                  <span className="text-muted-foreground text-xs">/mo</span>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="sm" className="gap-1"><Eye className="h-3.5 w-3.5" /> View</Button>
-                  <Button variant="outline" size="sm" className="gap-1"><Pencil className="h-3.5 w-3.5" /> Edit</Button>
-                  <Button variant="ghost" size="sm" className="gap-1 text-accent" onClick={() => setAllUnits(p.id, "vacant")}>
-                    <DoorOpen className="h-3.5 w-3.5" /> Mark vacant
-                  </Button>
-                  <Button variant="ghost" size="sm" className="gap-1 text-primary" onClick={() => setAllUnits(p.id, "occupied")}>
-                    <DoorClosed className="h-3.5 w-3.5" /> Mark occupied
-                  </Button>
-                  <Button variant="ghost" size="sm" className="gap-1 text-destructive col-span-2" onClick={() => remove(p.id)}>
-                    <Trash2 className="h-3.5 w-3.5" /> Delete
-                  </Button>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

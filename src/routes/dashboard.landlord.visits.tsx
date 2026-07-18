@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { visitRequests as seed, landlordProperties, type VisitRequest } from "@/lib/landlord-data";
+import { useEffect, useState } from "react";
+import { listVisitsForLandlord, updateVisitStatus } from "@/lib/keja-api";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Check, X, Clock, Phone, Mail, Calendar } from "lucide-react";
+import { Check, X, Phone, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 
 export const Route = createFileRoute("/dashboard/landlord/visits")({
   head: () => ({ meta: [{ title: "Visit Requests — Landlord" }] }),
@@ -11,14 +13,18 @@ export const Route = createFileRoute("/dashboard/landlord/visits")({
 });
 
 function VisitsPage() {
-  const [items, setItems] = useState<VisitRequest[]>(seed);
-  const [tab, setTab] = useState<"all" | "pending" | "accepted" | "declined">("all");
-  const filtered = tab === "all" ? items : items.filter((i) => i.status === tab);
-  const propMap = Object.fromEntries(landlordProperties.map((p) => [p.id, p.name]));
+  const { user } = useAuth();
+  const [items, setItems] = useState<any[]>([]);
+  const [tab, setTab] = useState<"all" | "pending" | "approved" | "declined">("all");
 
-  const update = (id: string, status: VisitRequest["status"]) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, status } : i)));
-    toast.success(`Visit ${status}`);
+  const load = () => { if (user) listVisitsForLandlord(user.id).then(setItems); };
+  useEffect(load, [user]);
+
+  const filtered = tab === "all" ? items : items.filter((i) => i.status === tab);
+
+  const update = async (id: string, status: string) => {
+    try { await updateVisitStatus(id, status); toast.success(`Visit ${status}`); load(); }
+    catch { toast.error("Could not update visit."); }
   };
 
   return (
@@ -29,7 +35,7 @@ function VisitsPage() {
       </header>
 
       <div className="mt-6 flex gap-2 flex-wrap">
-        {(["all", "pending", "accepted", "declined"] as const).map((t) => (
+        {(["all", "pending", "approved", "declined"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -46,68 +52,51 @@ function VisitsPage() {
         {filtered.map((v) => (
           <article key={v.id} className="rounded-2xl border border-border bg-card p-5 shadow-soft">
             <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="grid place-items-center h-11 w-11 rounded-full bg-primary text-primary-foreground text-sm font-bold shrink-0">
-                  {v.tenant.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                </span>
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">{v.tenant}</div>
-                  <div className="text-xs text-muted-foreground truncate">{propMap[v.propertyId]} • Unit {v.unitNumber}</div>
-                </div>
+              <div className="min-w-0">
+                <div className="font-semibold truncate">{v.tenant_name ?? "Tenant"}</div>
+                <div className="text-xs text-muted-foreground truncate">{v.property_name}</div>
               </div>
               <StatusBadge s={v.status} />
             </div>
 
             <div className="mt-4 space-y-1.5 text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-4 w-4" /> {v.date} at {v.time}</div>
-              <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-4 w-4" /> {v.phone}</div>
-              <div className="flex items-center gap-2 text-muted-foreground"><Mail className="h-4 w-4" /> {v.email}</div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Calendar className="h-4 w-4" /> {format(new Date(v.scheduled_at), "EEE d MMM · HH:mm")}
+              </div>
+              {v.tenant_phone && (
+                <div className="flex items-center gap-2 text-muted-foreground"><Phone className="h-4 w-4" /> {v.tenant_phone}</div>
+              )}
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <Button size="sm" className="gap-1" onClick={() => update(v.id, "accepted")}>
-                <Check className="h-3.5 w-3.5" /> Accept
-              </Button>
-              <Button size="sm" variant="outline" className="gap-1" onClick={() => toast.info("Reschedule flow coming soon")}>
-                <Clock className="h-3.5 w-3.5" /> Reschedule
-              </Button>
-              <Button size="sm" variant="ghost" className="gap-1 text-destructive" onClick={() => update(v.id, "declined")}>
-                <X className="h-3.5 w-3.5" /> Decline
-              </Button>
-            </div>
+            {v.status === "pending" && (
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button size="sm" className="gap-1" onClick={() => update(v.id, "approved")}>
+                  <Check className="h-3.5 w-3.5" /> Approve
+                </Button>
+                <Button size="sm" variant="ghost" className="gap-1 text-destructive" onClick={() => update(v.id, "declined")}>
+                  <X className="h-3.5 w-3.5" /> Decline
+                </Button>
+              </div>
+            )}
           </article>
         ))}
+        {filtered.length === 0 && (
+          <div className="col-span-full rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">
+            No visit requests yet.
+          </div>
+        )}
       </div>
-
-      <section className="mt-10 rounded-2xl border border-border bg-card p-6">
-        <h2 className="font-display font-bold">Upcoming schedule</h2>
-        <p className="text-xs text-muted-foreground">A quick view of accepted visits.</p>
-        <ul className="mt-4 divide-y divide-border">
-          {items.filter((i) => i.status === "accepted").map((v) => (
-            <li key={v.id} className="py-3 flex items-center gap-3">
-              <div className="grid place-items-center h-12 w-12 rounded-2xl bg-accent-soft text-accent shrink-0">
-                <Calendar className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-sm font-semibold truncate">{v.tenant} • {propMap[v.propertyId]}</div>
-                <div className="text-xs text-muted-foreground">{v.date} at {v.time}</div>
-              </div>
-            </li>
-          ))}
-          {items.filter((i) => i.status === "accepted").length === 0 && (
-            <li className="py-6 text-sm text-muted-foreground text-center">No accepted visits yet.</li>
-          )}
-        </ul>
-      </section>
     </div>
   );
 }
 
-function StatusBadge({ s }: { s: VisitRequest["status"] }) {
-  const map = {
+function StatusBadge({ s }: { s: string }) {
+  const map: Record<string, string> = {
     pending: "bg-muted text-muted-foreground",
-    accepted: "bg-accent-soft text-accent",
+    approved: "bg-accent-soft text-accent",
     declined: "bg-destructive/10 text-destructive",
-  } as const;
-  return <span className={`text-[10px] font-bold px-2 py-1 rounded-full capitalize shrink-0 ${map[s]}`}>{s}</span>;
+    cancelled: "bg-destructive/10 text-destructive",
+    completed: "bg-primary-soft text-primary",
+  };
+  return <span className={`text-[10px] font-bold px-2 py-1 rounded-full capitalize shrink-0 ${map[s] ?? "bg-muted"}`}>{s}</span>;
 }
