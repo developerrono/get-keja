@@ -14,7 +14,7 @@ import {
 import { AMENITIES, HOUSE_TYPES, type Unit, type HouseType } from "@/lib/landlord-data";
 import { createProperty, type CreatePropertyUnit } from "@/lib/keja-api";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Trash2, MapPin } from "lucide-react";
+import { Plus, Trash2, MapPin, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/landlord/add-property")({
@@ -33,6 +33,8 @@ function AddPropertyPage() {
   const [estate, setEstate] = useState("");
   const [street, setStreet] = useState("");
   const [amenities, setAmenities] = useState<string[]>([]);
+  const [coverImage, setCoverImage] = useState("");
+  const [galleryText, setGalleryText] = useState("");
   const [units, setUnits] = useState<Unit[]>([
     { id: crypto.randomUUID(), unitNumber: "A1", houseType: "Bedsitter", rent: 8000, deposit: 8000, serviceCharge: 500, status: "vacant" },
   ]);
@@ -49,6 +51,8 @@ function AddPropertyPage() {
 
   const toggleAmenity = (a: string) =>
     setAmenities((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]));
+
+  const galleryPreview = galleryText.split("\n").map((s) => s.trim()).filter(Boolean);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,6 +82,8 @@ function AddPropertyPage() {
         estate: [town, estate].filter(Boolean).join(" - ") || estate,
         address: street,
         amenities,
+        cover_image: coverImage.trim() || null,
+        images: galleryPreview,
         units: submittedUnits,
       });
 
@@ -96,7 +102,7 @@ function AddPropertyPage() {
         <h1 className="font-display text-2xl sm:text-3xl font-bold">Add a new property</h1>
         <p className="text-sm text-muted-foreground mt-1">Fill in the details below to publish your listing.</p>
         <p className="text-xs text-muted-foreground mt-1">
-          Note: image/video upload and GPS pin isn't wired up yet. New listings are reviewed before going live.
+          Note: direct file upload and GPS pin aren't wired up yet — paste image URLs below in the meantime. New listings are reviewed before going live.
         </p>
       </header>
 
@@ -111,6 +117,41 @@ function AddPropertyPage() {
             </Field>
           </div>
         </div>
+      </Section>
+
+      <Section title="Photos" description="Add a cover photo and any additional gallery photos, one URL per line.">
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Cover photo URL">
+            <Input value={coverImage} onChange={(e) => setCoverImage(e.target.value)} placeholder="https://example.com/photo.jpg" />
+          </Field>
+          <Field label="Gallery photo URLs (one per line)">
+            <Textarea
+              rows={4}
+              value={galleryText}
+              onChange={(e) => setGalleryText(e.target.value)}
+              placeholder={"https://example.com/photo1.jpg\nhttps://example.com/photo2.jpg"}
+            />
+          </Field>
+        </div>
+        {(coverImage || galleryPreview.length > 0) && (
+          <div className="mt-4 grid grid-cols-3 sm:grid-cols-5 gap-2">
+            {[coverImage, ...galleryPreview].filter(Boolean).map((url, i) => (
+              <div key={i} className="aspect-square rounded-lg overflow-hidden bg-surface border border-border">
+                <img
+                  src={url}
+                  alt=""
+                  className="h-full w-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {!coverImage && galleryPreview.length === 0 && (
+          <div className="mt-4 rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+            <ImageIcon className="h-4 w-4" /> No photos added yet — the listing will show a placeholder image.
+          </div>
+        )}
       </Section>
 
       <Section title="Location" description="Where can tenants find this property?">

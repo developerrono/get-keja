@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { useAuth } from "@/hooks/use-auth";
 
 const schema = z.object({
   email: z.string().trim().email("Enter a valid email").max(255),
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/login")({
 function LoginPage() {
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
+  const { refresh } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -90,6 +92,10 @@ function LoginPage() {
         toast.success("Welcome back!");
 
         localStorage.setItem("keja_user", JSON.stringify(result.user));
+
+        // Client-side navigate() doesn't remount AuthProvider, so without this,
+        // useAuth().user stays null in memory even though localStorage is correct.
+        await refresh();
 
         navigate({
           to: redirect ?? getDashboardPath(result.user.role),

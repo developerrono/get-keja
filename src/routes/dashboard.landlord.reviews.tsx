@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { listReviewsForLandlord, type DbReview } from "@/lib/keja-api";
+import { listReviewsForLandlord, replyToReview, type DbReview } from "@/lib/keja-api";
 import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Star, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/landlord/reviews")({
   head: () => ({ meta: [{ title: "Reviews — Landlord" }] }),
@@ -10,18 +13,40 @@ export const Route = createFileRoute("/dashboard/landlord/reviews")({
 });
 
 function ReviewsPage() {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const [items, setItems] = useState<DbReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [replyingId, setReplyingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!profile?.id) return;
-    listReviewsForLandlord(profile.id)
+    if (!user) return;
+    setLoading(true);
+    listReviewsForLandlord(user.id)
       .then(setItems)
+      .catch((err) => toast.error(err instanceof Error ? err.message : "Failed to load reviews."))
       .finally(() => setLoading(false));
-  }, [profile?.id]);
+  }, [user]);
 
   const avg = items.length ? items.reduce((s, r) => s + r.rating, 0) / items.length : 0;
+
+  const reply = async (id: string) => {
+    const text = drafts[id]?.trim();
+    if (!text || !user) return;
+    setReplyingId(id);
+    try {
+      await replyToReview(id, user.id, text);
+      setItems((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, landlord_reply: text, replied_at: new Date().toISOString() } : r)),
+      );
+      setDrafts((d) => ({ ...d, [id]: "" }));
+      toast.success("Reply posted");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to post reply.");
+    } finally {
+      setReplyingId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -40,8 +65,8 @@ function ReviewsPage() {
       </header>
 
       {items.length === 0 ? (
-        <div className="mt-10 rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">
-          No reviews yet on your properties.
+        <div className="mt-10 rounded-2xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          No reviews yet.
         </div>
       ) : (
         <>
@@ -58,7 +83,7 @@ function ReviewsPage() {
             <div className="flex-1 min-w-[200px] space-y-1.5">
               {[5, 4, 3, 2, 1].map((n) => {
                 const count = items.filter((r) => r.rating === n).length;
-                const pct = items.length ? (count / items.length) * 100 : 0;
+                const pct = (count / items.length) * 100;
                 return (
                   <div key={n} className="flex items-center gap-2 text-xs">
                     <span className="w-3">{n}</span>
@@ -79,10 +104,10 @@ function ReviewsPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="grid place-items-center h-10 w-10 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
-                      {(r.tenant_name ?? "?").split(" ").map((n) => n[0]).slice(0, 2).join("")}
+                      {(r.tenant_name ?? "?").split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
                     </span>
                     <div className="min-w-0">
-                      <div className="font-semibold truncate">{r.tenant_name}</div>
+                      <div className="font-semibold truncate">{r.tenant_name ?? "Tenant"}</div>
                       <div className="text-xs text-muted-foreground truncate">
                         {r.property_name} • {new Date(r.created_at).toLocaleDateString()}
                       </div>
@@ -95,6 +120,27 @@ function ReviewsPage() {
                   </div>
                 </div>
                 {r.body && <p className="mt-3 text-sm">{r.body}</p>}
+
+                {r.landlord_reply ? (
+                  <div className="mt-3 rounded-xl bg-primary-soft p-3">
+                    <div className="text-[11px] font-bold uppercase text-primary">Your reply</div>
+                    <p className="text-sm mt-1">{r.landlord_reply}</p>
+                  </div>
+                ) : (
+                  <div className="mt-3 space-y-2">
+                    <Textarea
+                      rows={2}
+                      value={drafts[r.id] ?? ""}
+                      onChange={(e) => setDrafts((d) => ({ ...d, [r.id]: e.target.value }))}
+                      placeholder="Reply to this review…"
+                    />
+                    <div className="flex justify-end">
+                      <Button size="sm" disabled={replyingId === r.id} onClick={() => reply(r.id)}>
+                        {replyingId === r.id ? "Posting…" : "Post reply"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </article>
             ))}
           </div>

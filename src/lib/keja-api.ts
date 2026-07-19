@@ -59,6 +59,7 @@ export type DbReview = {
   id: string; property_id: string; tenant_id: string; rating: number;
   body: string | null; photos: string[]; status: string; created_at: string;
   property_name?: string; tenant_name?: string;
+  landlord_reply?: string | null; replied_at?: string | null;
 };
 
 export type DbNotification = {
@@ -342,6 +343,10 @@ export async function deleteReview(id: string) {
   await apiPost("reviews.php", { action: "delete", id });
 }
 
+export async function replyToReview(reviewId: string, landlordId: string, reply: string) {
+  await apiPost("reviews.php", { action: "reply", id: reviewId, landlord_id: landlordId, reply });
+}
+
 // ---- Reports ----
 export async function submitReport(input: {
   reporter_id: string; target_type: "property" | "user" | "review";
@@ -382,7 +387,7 @@ export async function listTenancies(landlordId: string) {
 }
 
 export async function createTenancy(input: {
-  property_id: string; unit_id?: string | null; tenant_id: string; landlord_id: string;
+  property_id: string; unit_id?: string | null; tenant_id?: string; tenant_email?: string; landlord_id: string;
   since_date: string; monthly_rent: number;
 }) {
   await apiPost("tenancies.php", { action: "create", ...input });
