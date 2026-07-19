@@ -9,10 +9,13 @@ import { format } from "date-fns";
 
 export const Route = createFileRoute("/dashboard/tenant/messages")({ component: Messages });
 
-type Convo = { id: string; tenant_id: string; landlord_id: string; property_id: string | null;
-  properties?: { name: string; cover_image: string | null } | null;
-  tenant?: { full_name: string | null; avatar_url: string | null } | null;
-  landlord?: { full_name: string | null; avatar_url: string | null } | null };
+// messaging.php's list_conversations SELECT joins these flat fields onto the row —
+// there's no nested .properties/.tenant/.landlord object.
+type Convo = {
+  id: string; tenant_id: string; landlord_id: string; property_id: string | null;
+  property_name: string | null; cover_image: string | null;
+  tenant_name: string; landlord_name: string;
+};
 
 function Messages() {
   const { user } = useAuth();
@@ -38,12 +41,12 @@ function Messages() {
         <div className="rounded-2xl border border-border bg-card overflow-y-auto">
           {convos.length === 0 && <div className="p-6 text-sm text-muted-foreground">No conversations yet.</div>}
           {convos.map((c) => {
-            const other = user?.id === c.tenant_id ? c.landlord : c.tenant;
+            const otherName = user?.id === c.tenant_id ? c.landlord_name : c.tenant_name;
             return (
               <button key={c.id} onClick={() => setActive(c)}
                 className={`w-full text-left p-4 border-b border-border hover:bg-muted ${active?.id === c.id ? "bg-muted" : ""}`}>
-                <div className="font-semibold text-sm">{other?.full_name ?? "User"}</div>
-                <div className="text-xs text-muted-foreground truncate">{c.properties?.name}</div>
+                <div className="font-semibold text-sm">{otherName ?? "User"}</div>
+                <div className="text-xs text-muted-foreground truncate">{c.property_name}</div>
               </button>
             );
           })}
@@ -54,7 +57,7 @@ function Messages() {
           ) : (
             <>
               <div className="p-4 border-b border-border font-semibold">
-                {active.properties?.name ?? "Conversation"}
+                {active.property_name ?? "Conversation"}
               </div>
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {msgs.map((m) => (

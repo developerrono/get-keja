@@ -22,7 +22,7 @@ function AdvancedSearch() {
   const [favIds, setFavIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (user) listFavorites(user.id).then((x) => setFavIds(new Set(x.map((y) => y.property_id)))); }, [user]);
+  useEffect(() => { if (user) listFavorites(user.id).then((x) => setFavIds(new Set(x.map((y) => y.id)))); }, [user]);
 
   const run = async () => {
     setLoading(true);

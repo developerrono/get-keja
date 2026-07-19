@@ -13,8 +13,7 @@ function Compare() {
 
   useEffect(() => {
     if (!user) return;
-    listFavorites(user.id).then((f) => {
-      const props = f.map((x) => x.properties as unknown as DbProperty).filter(Boolean);
+    listFavorites(user.id).then((props) => {
       setItems(props);
       setPicked(new Set(props.slice(0, 3).map((p) => p.id)));
     });

@@ -29,21 +29,20 @@ function Visits() {
       ) : (
         <div className="mt-6 space-y-3">
           {items.map((v) => {
-            const prop = (v as unknown as { properties: { name: string; cover_image: string | null; county: string; estate: string | null } }).properties;
             return (
               <div key={v.id} className="rounded-2xl border border-border bg-card p-4 flex flex-wrap items-center gap-4">
-                {prop?.cover_image && <img src={prop.cover_image} alt="" className="h-16 w-16 rounded-xl object-cover" />}
+                {v.cover_image && <img src={v.cover_image} alt="" className="h-16 w-16 rounded-xl object-cover" />}
                 <div className="flex-1 min-w-0">
-                  <div className="font-semibold truncate">{prop?.name}</div>
-                  <div className="text-xs text-muted-foreground">{[prop?.estate, prop?.county].filter(Boolean).join(", ")}</div>
+                  <div className="font-semibold truncate">{v.property_name}</div>
+                  <div className="text-xs text-muted-foreground">{[v.estate, v.county].filter(Boolean).join(", ")}</div>
                   <div className="text-xs mt-1">{format(new Date(v.scheduled_at), "EEE d MMM · HH:mm")}</div>
                 </div>
                 <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                  v.status === "approved" ? "bg-accent text-accent-foreground" :
+                  v.status === "accepted" ? "bg-accent text-accent-foreground" :
                   v.status === "declined" || v.status === "cancelled" ? "bg-destructive/10 text-destructive" :
                   "bg-muted"
                 }`}>{v.status}</span>
-                {(v.status === "pending" || v.status === "approved") && (
+                {(v.status === "pending" || v.status === "accepted") && (
                   <Button size="sm" variant="outline" onClick={() => cancel(v.id)}>Cancel</Button>
                 )}
               </div>

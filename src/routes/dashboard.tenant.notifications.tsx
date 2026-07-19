@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { listNotifications, markNotificationRead, type DbNotification } from "@/lib/keja-api";
+import { listNotifications, markNotificationRead } from "@/lib/keja-api";
 import { useAuth } from "@/hooks/use-auth";
 import { Bell } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/dashboard/tenant/notifications")({ compon
 
 function Notifs() {
   const { user } = useAuth();
-  const [items, setItems] = useState<DbNotification[]>([]);
+  const [items, setItems] = useState<Awaited<ReturnType<typeof listNotifications>>>([]);
   useEffect(() => { if (user) listNotifications(user.id).then(setItems); }, [user]);
 
   const read = async (id: string) => { await markNotificationRead(id); setItems((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n)); };

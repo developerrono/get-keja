@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { useAuth } from "@/hooks/use-auth";
 
 const schema = z
   .object({
@@ -42,6 +43,7 @@ function getDashboardPath(role: string) {
 
 function SignupPage() {
   const navigate = useNavigate();
+  const { refresh } = useAuth();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -89,6 +91,10 @@ function SignupPage() {
       if (result.success) {
         toast.success("Account created! Signing you in...");
         localStorage.setItem("keja_user", JSON.stringify(result.user));
+        // Client-side navigate() doesn't remount AuthProvider, and localStorage's
+        // "storage" event only fires in *other* tabs — so without this, useAuth().user
+        // stays null in memory even though localStorage is already correct.
+        await refresh();
         navigate({ to: getDashboardPath(result.user.role), replace: true });
       } else {
         toast.error(result.message || "Could not create account.");

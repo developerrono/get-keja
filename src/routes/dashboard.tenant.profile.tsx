@@ -18,8 +18,9 @@ function TenantProfile() {
 
   useEffect(() => {
     if (profile) {
-      setName(profile.full_name ?? "");
+      setName(profile.fullName ?? "");
       setPhone(profile.phone ?? "");
+      setBio(profile.bio ?? "");
     }
   }, [profile]);
 
