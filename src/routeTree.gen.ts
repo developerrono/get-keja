@@ -25,6 +25,7 @@ import { Route as DashboardAdminIndexRouteImport } from './routes/dashboard.admi
 import { Route as DashboardTenantVisitsRouteImport } from './routes/dashboard.tenant.visits'
 import { Route as DashboardTenantSearchRouteImport } from './routes/dashboard.tenant.search'
 import { Route as DashboardTenantReviewsRouteImport } from './routes/dashboard.tenant.reviews'
+import { Route as DashboardTenantRentRouteImport } from './routes/dashboard.tenant.rent'
 import { Route as DashboardTenantProfileRouteImport } from './routes/dashboard.tenant.profile'
 import { Route as DashboardTenantNotificationsRouteImport } from './routes/dashboard.tenant.notifications'
 import { Route as DashboardTenantMessagesRouteImport } from './routes/dashboard.tenant.messages'
@@ -33,6 +34,7 @@ import { Route as DashboardTenantFeedRouteImport } from './routes/dashboard.tena
 import { Route as DashboardTenantFavoritesRouteImport } from './routes/dashboard.tenant.favorites'
 import { Route as DashboardTenantCompareRouteImport } from './routes/dashboard.tenant.compare'
 import { Route as DashboardLandlordVisitsRouteImport } from './routes/dashboard.landlord.visits'
+import { Route as DashboardLandlordTransactionsRouteImport } from './routes/dashboard.landlord.transactions'
 import { Route as DashboardLandlordTenantsRouteImport } from './routes/dashboard.landlord.tenants'
 import { Route as DashboardLandlordSettingsRouteImport } from './routes/dashboard.landlord.settings'
 import { Route as DashboardLandlordReviewsRouteImport } from './routes/dashboard.landlord.reviews'
@@ -130,6 +132,11 @@ const DashboardTenantReviewsRoute = DashboardTenantReviewsRouteImport.update({
   path: '/reviews',
   getParentRoute: () => DashboardTenantRoute,
 } as any)
+const DashboardTenantRentRoute = DashboardTenantRentRouteImport.update({
+  id: '/rent',
+  path: '/rent',
+  getParentRoute: () => DashboardTenantRoute,
+} as any)
 const DashboardTenantProfileRoute = DashboardTenantProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -172,6 +179,12 @@ const DashboardLandlordVisitsRoute = DashboardLandlordVisitsRouteImport.update({
   path: '/visits',
   getParentRoute: () => DashboardLandlordRoute,
 } as any)
+const DashboardLandlordTransactionsRoute =
+  DashboardLandlordTransactionsRouteImport.update({
+    id: '/transactions',
+    path: '/transactions',
+    getParentRoute: () => DashboardLandlordRoute,
+  } as any)
 const DashboardLandlordTenantsRoute =
   DashboardLandlordTenantsRouteImport.update({
     id: '/tenants',
@@ -290,6 +303,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/landlord/reviews': typeof DashboardLandlordReviewsRoute
   '/dashboard/landlord/settings': typeof DashboardLandlordSettingsRoute
   '/dashboard/landlord/tenants': typeof DashboardLandlordTenantsRoute
+  '/dashboard/landlord/transactions': typeof DashboardLandlordTransactionsRoute
   '/dashboard/landlord/visits': typeof DashboardLandlordVisitsRoute
   '/dashboard/tenant/compare': typeof DashboardTenantCompareRoute
   '/dashboard/tenant/favorites': typeof DashboardTenantFavoritesRoute
@@ -298,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/tenant/messages': typeof DashboardTenantMessagesRoute
   '/dashboard/tenant/notifications': typeof DashboardTenantNotificationsRoute
   '/dashboard/tenant/profile': typeof DashboardTenantProfileRoute
+  '/dashboard/tenant/rent': typeof DashboardTenantRentRoute
   '/dashboard/tenant/reviews': typeof DashboardTenantReviewsRoute
   '/dashboard/tenant/search': typeof DashboardTenantSearchRoute
   '/dashboard/tenant/visits': typeof DashboardTenantVisitsRoute
@@ -329,6 +344,7 @@ export interface FileRoutesByTo {
   '/dashboard/landlord/reviews': typeof DashboardLandlordReviewsRoute
   '/dashboard/landlord/settings': typeof DashboardLandlordSettingsRoute
   '/dashboard/landlord/tenants': typeof DashboardLandlordTenantsRoute
+  '/dashboard/landlord/transactions': typeof DashboardLandlordTransactionsRoute
   '/dashboard/landlord/visits': typeof DashboardLandlordVisitsRoute
   '/dashboard/tenant/compare': typeof DashboardTenantCompareRoute
   '/dashboard/tenant/favorites': typeof DashboardTenantFavoritesRoute
@@ -337,6 +353,7 @@ export interface FileRoutesByTo {
   '/dashboard/tenant/messages': typeof DashboardTenantMessagesRoute
   '/dashboard/tenant/notifications': typeof DashboardTenantNotificationsRoute
   '/dashboard/tenant/profile': typeof DashboardTenantProfileRoute
+  '/dashboard/tenant/rent': typeof DashboardTenantRentRoute
   '/dashboard/tenant/reviews': typeof DashboardTenantReviewsRoute
   '/dashboard/tenant/search': typeof DashboardTenantSearchRoute
   '/dashboard/tenant/visits': typeof DashboardTenantVisitsRoute
@@ -372,6 +389,7 @@ export interface FileRoutesById {
   '/dashboard/landlord/reviews': typeof DashboardLandlordReviewsRoute
   '/dashboard/landlord/settings': typeof DashboardLandlordSettingsRoute
   '/dashboard/landlord/tenants': typeof DashboardLandlordTenantsRoute
+  '/dashboard/landlord/transactions': typeof DashboardLandlordTransactionsRoute
   '/dashboard/landlord/visits': typeof DashboardLandlordVisitsRoute
   '/dashboard/tenant/compare': typeof DashboardTenantCompareRoute
   '/dashboard/tenant/favorites': typeof DashboardTenantFavoritesRoute
@@ -380,6 +398,7 @@ export interface FileRoutesById {
   '/dashboard/tenant/messages': typeof DashboardTenantMessagesRoute
   '/dashboard/tenant/notifications': typeof DashboardTenantNotificationsRoute
   '/dashboard/tenant/profile': typeof DashboardTenantProfileRoute
+  '/dashboard/tenant/rent': typeof DashboardTenantRentRoute
   '/dashboard/tenant/reviews': typeof DashboardTenantReviewsRoute
   '/dashboard/tenant/search': typeof DashboardTenantSearchRoute
   '/dashboard/tenant/visits': typeof DashboardTenantVisitsRoute
@@ -416,6 +435,7 @@ export interface FileRouteTypes {
     | '/dashboard/landlord/reviews'
     | '/dashboard/landlord/settings'
     | '/dashboard/landlord/tenants'
+    | '/dashboard/landlord/transactions'
     | '/dashboard/landlord/visits'
     | '/dashboard/tenant/compare'
     | '/dashboard/tenant/favorites'
@@ -424,6 +444,7 @@ export interface FileRouteTypes {
     | '/dashboard/tenant/messages'
     | '/dashboard/tenant/notifications'
     | '/dashboard/tenant/profile'
+    | '/dashboard/tenant/rent'
     | '/dashboard/tenant/reviews'
     | '/dashboard/tenant/search'
     | '/dashboard/tenant/visits'
@@ -455,6 +476,7 @@ export interface FileRouteTypes {
     | '/dashboard/landlord/reviews'
     | '/dashboard/landlord/settings'
     | '/dashboard/landlord/tenants'
+    | '/dashboard/landlord/transactions'
     | '/dashboard/landlord/visits'
     | '/dashboard/tenant/compare'
     | '/dashboard/tenant/favorites'
@@ -463,6 +485,7 @@ export interface FileRouteTypes {
     | '/dashboard/tenant/messages'
     | '/dashboard/tenant/notifications'
     | '/dashboard/tenant/profile'
+    | '/dashboard/tenant/rent'
     | '/dashboard/tenant/reviews'
     | '/dashboard/tenant/search'
     | '/dashboard/tenant/visits'
@@ -497,6 +520,7 @@ export interface FileRouteTypes {
     | '/dashboard/landlord/reviews'
     | '/dashboard/landlord/settings'
     | '/dashboard/landlord/tenants'
+    | '/dashboard/landlord/transactions'
     | '/dashboard/landlord/visits'
     | '/dashboard/tenant/compare'
     | '/dashboard/tenant/favorites'
@@ -505,6 +529,7 @@ export interface FileRouteTypes {
     | '/dashboard/tenant/messages'
     | '/dashboard/tenant/notifications'
     | '/dashboard/tenant/profile'
+    | '/dashboard/tenant/rent'
     | '/dashboard/tenant/reviews'
     | '/dashboard/tenant/search'
     | '/dashboard/tenant/visits'
@@ -640,6 +665,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardTenantReviewsRouteImport
       parentRoute: typeof DashboardTenantRoute
     }
+    '/dashboard/tenant/rent': {
+      id: '/dashboard/tenant/rent'
+      path: '/rent'
+      fullPath: '/dashboard/tenant/rent'
+      preLoaderRoute: typeof DashboardTenantRentRouteImport
+      parentRoute: typeof DashboardTenantRoute
+    }
     '/dashboard/tenant/profile': {
       id: '/dashboard/tenant/profile'
       path: '/profile'
@@ -694,6 +726,13 @@ declare module '@tanstack/react-router' {
       path: '/visits'
       fullPath: '/dashboard/landlord/visits'
       preLoaderRoute: typeof DashboardLandlordVisitsRouteImport
+      parentRoute: typeof DashboardLandlordRoute
+    }
+    '/dashboard/landlord/transactions': {
+      id: '/dashboard/landlord/transactions'
+      path: '/transactions'
+      fullPath: '/dashboard/landlord/transactions'
+      preLoaderRoute: typeof DashboardLandlordTransactionsRouteImport
       parentRoute: typeof DashboardLandlordRoute
     }
     '/dashboard/landlord/tenants': {
@@ -849,6 +888,7 @@ interface DashboardLandlordRouteChildren {
   DashboardLandlordReviewsRoute: typeof DashboardLandlordReviewsRoute
   DashboardLandlordSettingsRoute: typeof DashboardLandlordSettingsRoute
   DashboardLandlordTenantsRoute: typeof DashboardLandlordTenantsRoute
+  DashboardLandlordTransactionsRoute: typeof DashboardLandlordTransactionsRoute
   DashboardLandlordVisitsRoute: typeof DashboardLandlordVisitsRoute
   DashboardLandlordIndexRoute: typeof DashboardLandlordIndexRoute
 }
@@ -861,6 +901,7 @@ const DashboardLandlordRouteChildren: DashboardLandlordRouteChildren = {
   DashboardLandlordReviewsRoute: DashboardLandlordReviewsRoute,
   DashboardLandlordSettingsRoute: DashboardLandlordSettingsRoute,
   DashboardLandlordTenantsRoute: DashboardLandlordTenantsRoute,
+  DashboardLandlordTransactionsRoute: DashboardLandlordTransactionsRoute,
   DashboardLandlordVisitsRoute: DashboardLandlordVisitsRoute,
   DashboardLandlordIndexRoute: DashboardLandlordIndexRoute,
 }
@@ -876,6 +917,7 @@ interface DashboardTenantRouteChildren {
   DashboardTenantMessagesRoute: typeof DashboardTenantMessagesRoute
   DashboardTenantNotificationsRoute: typeof DashboardTenantNotificationsRoute
   DashboardTenantProfileRoute: typeof DashboardTenantProfileRoute
+  DashboardTenantRentRoute: typeof DashboardTenantRentRoute
   DashboardTenantReviewsRoute: typeof DashboardTenantReviewsRoute
   DashboardTenantSearchRoute: typeof DashboardTenantSearchRoute
   DashboardTenantVisitsRoute: typeof DashboardTenantVisitsRoute
@@ -890,6 +932,7 @@ const DashboardTenantRouteChildren: DashboardTenantRouteChildren = {
   DashboardTenantMessagesRoute: DashboardTenantMessagesRoute,
   DashboardTenantNotificationsRoute: DashboardTenantNotificationsRoute,
   DashboardTenantProfileRoute: DashboardTenantProfileRoute,
+  DashboardTenantRentRoute: DashboardTenantRentRoute,
   DashboardTenantReviewsRoute: DashboardTenantReviewsRoute,
   DashboardTenantSearchRoute: DashboardTenantSearchRoute,
   DashboardTenantVisitsRoute: DashboardTenantVisitsRoute,

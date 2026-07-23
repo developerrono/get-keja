@@ -24,6 +24,10 @@ import {
   type DbProperty,
   type DbUnit,
 } from "@/lib/keja-api";
+import { MoveInButton } from "@/components/tenant/MoveInButton";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import {
@@ -46,6 +50,14 @@ import fallbackImg from "@/assets/property-1.jpg";
 type Landlord = { id: string; full_name: string; email: string; phone: string | null; is_verified: boolean } | null;
 type Review = { id: string; tenant_name: string; rating: number; body: string | null; created_at: string };
 type FullProperty = DbProperty & { landlord: Landlord; units: DbUnit[]; reviews: Review[] };
+
+// Fix default marker icon paths (Leaflet + bundlers) — same fix used in dashboard.tenant.map.tsx
+const markerIcon = L.icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41], iconAnchor: [12, 41],
+});
 
 export const Route = createFileRoute("/property/$id")({
   loader: async ({ params }) => {
@@ -241,14 +253,27 @@ function PropertyPage() {
                 <h2 className="font-display text-xl font-bold">Units</h2>
                 <div className="mt-4 grid sm:grid-cols-2 gap-3">
                   {property.units.map((u) => (
-                    <div key={u.id} className="rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between">
+                    <div key={u.id} className="rounded-xl border border-border bg-card px-4 py-3 flex items-center justify-between gap-3">
                       <div>
                         <div className="text-sm font-semibold">Unit {u.label}</div>
                         <div className="text-xs text-muted-foreground">{formatKsh(u.monthly_rent)} / mo</div>
                       </div>
-                      <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${u.is_vacant ? "bg-accent-soft text-accent" : "bg-muted text-muted-foreground"}`}>
-                        {u.is_vacant ? "Vacant" : "Occupied"}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[11px] font-bold px-2 py-1 rounded-full ${u.is_vacant ? "bg-accent-soft text-accent" : "bg-muted text-muted-foreground"}`}>
+                          {u.is_vacant ? "Vacant" : "Occupied"}
+                        </span>
+                        {!isOwnListing && u.is_vacant && (
+                          <MoveInButton
+                            tenantId={user?.id}
+                            propertyId={property.id}
+                            landlordId={property.landlord_id}
+                            monthlyRent={u.monthly_rent ?? property.monthly_rent}
+                            unitId={u.id}
+                            isVacant={u.is_vacant}
+                            onMovedIn={() => navigate({ to: "/dashboard/tenant/rent" as never })}
+                          />
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -271,12 +296,33 @@ function PropertyPage() {
 
             <section className="mt-10">
               <h2 className="font-display text-xl font-bold">Location</h2>
-              <div className="mt-4 rounded-2xl border border-border h-64 grid place-items-center bg-surface text-muted-foreground text-sm">
-                <span className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  {property.address || [property.estate, property.county].filter(Boolean).join(", ") || "Location not specified"}
-                </span>
-              </div>
+              {property.latitude != null && property.longitude != null ? (
+                <div className="mt-4 rounded-2xl overflow-hidden border border-border h-64">
+                  <MapContainer
+                    center={[property.latitude, property.longitude]}
+                    zoom={15}
+                    className="h-full w-full"
+                    scrollWheelZoom={false}
+                  >
+                    <TileLayer attribution='&copy; OpenStreetMap' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Marker position={[property.latitude, property.longitude]} icon={markerIcon}>
+                      <Popup>
+                        <div className="text-sm font-semibold">{property.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {property.address || [property.estate, property.county].filter(Boolean).join(", ")}
+                        </div>
+                      </Popup>
+                    </Marker>
+                  </MapContainer>
+                </div>
+              ) : (
+                <div className="mt-4 rounded-2xl border border-border h-64 grid place-items-center bg-surface text-muted-foreground text-sm">
+                  <span className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    {property.address || [property.estate, property.county].filter(Boolean).join(", ") || "Location not specified"}
+                  </span>
+                </div>
+              )}
             </section>
 
             <section className="mt-10">
@@ -368,6 +414,31 @@ function PropertyPage() {
                   {bookingVisit ? <Loader2 className="h-4 w-4 animate-spin" /> : <CalendarCheck className="h-4 w-4" />}
                   Request visit
                 </Button>
+              </div>
+            )}
+
+            {!isOwnListing && vacantUnits > 0 && (
+              <div className="rounded-2xl border border-accent bg-accent-soft p-5 space-y-3">
+                <div className="font-semibold text-sm flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-accent" />
+                  {vacantUnits} unit{vacantUnits > 1 ? "s" : ""} ready to move into
+                </div>
+                {property.units.filter((u) => u.is_vacant).length === 1 ? (
+                  // Only one vacant unit — skip the picker, one clear button
+                  <MoveInButton
+                    tenantId={user?.id}
+                    propertyId={property.id}
+                    landlordId={property.landlord_id}
+                    monthlyRent={property.units.find((u) => u.is_vacant)?.monthly_rent ?? property.monthly_rent}
+                    unitId={property.units.find((u) => u.is_vacant)?.id}
+                    isVacant
+                    onMovedIn={() => navigate({ to: "/dashboard/tenant/rent" as never })}
+                  />
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Pick a unit below in the Units section to move in.
+                  </p>
+                )}
               </div>
             )}
 

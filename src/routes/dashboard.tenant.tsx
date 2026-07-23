@@ -4,6 +4,7 @@ import { RequireAuth } from "@/components/auth/RequireAuth";
 import {
   Bell,
   CalendarCheck,
+  CreditCard,
   Heart,
   Home,
   MessageSquare,
@@ -19,6 +20,7 @@ const navItems = [
   { to: "/dashboard/tenant", label: "Home", icon: Home },
   { to: "/dashboard/tenant/feed", label: "Home feed", icon: Search },
   { to: "/dashboard/tenant/favorites", label: "Saved houses", icon: Heart },
+  { to: "/dashboard/tenant/rent", label: "My rent", icon: CreditCard },
   { to: "/dashboard/tenant/notifications", label: "Notifications", icon: Bell },
   { to: "/dashboard/tenant/messages", label: "Messages", icon: MessageSquare },
   { to: "/dashboard/tenant/visits", label: "House visits", icon: CalendarCheck },

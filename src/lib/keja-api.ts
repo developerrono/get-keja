@@ -7,6 +7,7 @@ export type DbProperty = {
   description: string | null;
   cover_image: string | null;
   images: string[];
+  video: string | null;
   county: string;
   estate: string | null;
   address: string | null;
@@ -103,6 +104,29 @@ export type DbTenancy = {
   property_name: string; unit_label: string | null;
 };
 
+export type DbTransaction = {
+  id: number;
+  tenancy_id: string | null;
+  tenant_id: string;
+  landlord_id: string;
+  property_id: string | null;
+  unit_id: string | null;
+  phone: string;
+  amount: number;
+  admin_fee: number;
+  landlord_amount: number;
+  status: "pending" | "success" | "failed";
+  mpesa_receipt: string | null;
+  checkout_request_id: string;
+  merchant_request_id: string | null;
+  failure_reason: string | null;
+  created_at: string;
+  confirmed_at: string | null;
+  property_name?: string;
+  tenant_name?: string;
+  landlord_name?: string;
+};
+
 export const KENYA_COUNTIES = [
   "Nairobi", "Mombasa", "Kisumu", "Nakuru", "Kiambu", "Machakos",
   "Uasin Gishu", "Kajiado", "Kilifi", "Nyeri",
@@ -162,6 +186,26 @@ async function apiPost<T = any>(path: string, body: Record<string, any> = {}): P
   const json = await res.json();
   if (!json.success) throw new Error(json.message || "Request failed.");
   return json;
+}
+
+/**
+ * Uploads a single image or video file to the backend and returns its public URL.
+ * Unlike apiPost, this sends multipart/form-data since we're posting a real file,
+ * not JSON. Requires an `upload-media.php` endpoint on the backend — see the
+ * accompanying PHP example.
+ */
+export async function uploadPropertyMedia(file: File, folder: string): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("folder", folder);
+
+  const res = await fetch(`${API_BASE}/upload-media.php`, {
+    method: "POST",
+    body: formData,
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || "Upload failed.");
+  return json.url as string;
 }
 
 // ---- Auth ----
@@ -238,6 +282,7 @@ export async function createProperty(input: {
   description?: string;
   cover_image?: string;
   images?: string[];
+  video?: string | null;
   county: string;
   estate?: string;
   address?: string;
@@ -450,4 +495,85 @@ export async function adminUpdateReviewStatus(id: string, status: "active" | "hi
 
 export async function adminBroadcast(input: { author_id: string; category: string; title: string; body: string }) {
   await apiPost("admin.php", { action: "broadcast", ...input });
+}
+
+/* -------------------- Move In (tenant self-service) -------------------- */
+
+export async function moveIn(input: {
+  tenant_id: string;
+  property_id: string;
+  landlord_id: string;
+  monthly_rent: number;
+  unit_id?: string | null;
+}) {
+  const json = await apiPost("move-in.php", input);
+  return json.id as string;
+}
+
+/** A tenant's own tenancies (active and ended), independent of the landlord-scoped listTenancies(). */
+export async function listMyTenancies(tenantId: string) {
+  const json = await apiGet("my-tenancy.php", { tenant_id: tenantId });
+  return json.data as (DbTenancy & { cover_image: string | null })[];
+}
+
+/* -------------------- M-Pesa payments -------------------- */
+
+/** Kicks off an STK Push — the tenant gets a prompt on their phone to enter their PIN. */
+export async function initiateStkPush(input: {
+  tenant_id: string;
+  landlord_id: string;
+  phone: string;
+  amount: number;
+  tenancy_id?: string | null;
+  property_id?: string | null;
+  unit_id?: string | null;
+}) {
+  const json = await apiPost("mpesa-stk-push.php", input);
+  return {
+    checkoutRequestId: json.checkout_request_id as string,
+    merchantRequestId: json.merchant_request_id as string,
+    message: json.message as string,
+  };
+}
+
+export type MpesaPollResult = {
+  status: "pending" | "success" | "failed";
+  mpesa_receipt: string | null;
+  amount: number;
+  failure_reason: string | null;
+};
+
+/** Poll this every few seconds after initiateStkPush until status is no longer "pending". */
+export async function pollMpesaStatus(checkoutRequestId: string) {
+  const json = await apiGet("mpesa-query.php", { checkout_request_id: checkoutRequestId });
+  return json.data as MpesaPollResult;
+}
+
+/** Convenience helper: polls until success/failed or the timeout elapses. */
+export async function waitForMpesaResult(
+  checkoutRequestId: string,
+  { intervalMs = 3000, timeoutMs = 60000 }: { intervalMs?: number; timeoutMs?: number } = {},
+): Promise<MpesaPollResult> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const result = await pollMpesaStatus(checkoutRequestId);
+    if (result.status !== "pending") return result;
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  return { status: "pending", mpesa_receipt: null, amount: 0, failure_reason: "Timed out waiting for confirmation." };
+}
+
+export async function listTransactionsForTenant(tenantId: string) {
+  const json = await apiGet("transactions.php", { tenant_id: tenantId });
+  return json.data as DbTransaction[];
+}
+
+export async function listTransactionsForLandlord(landlordId: string) {
+  const json = await apiGet("transactions.php", { landlord_id: landlordId });
+  return json.data as DbTransaction[];
+}
+
+export async function adminListTransactions() {
+  const json = await apiGet("transactions.php", { admin: "1" });
+  return json.data as DbTransaction[];
 }
