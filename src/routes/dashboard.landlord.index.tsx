@@ -12,11 +12,14 @@ import {
   Plus,
   ArrowUpRight,
   Loader2,
+  Wallet,
 } from "lucide-react";
 import {
   fetchProperties,
   listVisitsForLandlord,
   listConversations,
+  listTransactionsForLandlord,
+  formatKsh,
   type DbProperty,
 } from "@/lib/keja-api";
 import { useAuth } from "@/hooks/use-auth";
@@ -35,6 +38,7 @@ function Overview() {
   const [properties, setProperties] = useState<DbProperty[]>([]);
   const [visits, setVisits] = useState<VisitRow[]>([]);
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
+  const [monthlyIncome, setMonthlyIncome] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,11 +48,22 @@ function Overview() {
       fetchProperties({ landlord_id: profile.id, status: "all", limit: 100 }),
       listVisitsForLandlord(profile.id).catch(() => []),
       listConversations(profile.id).catch(() => []),
+      listTransactionsForLandlord(profile.id).catch(() => []),
     ])
-      .then(([propsRes, visitsRes, convosRes]) => {
+      .then(([propsRes, visitsRes, convosRes, txRes]) => {
         setProperties(propsRes.rows);
         setVisits((visitsRes ?? []) as VisitRow[]);
         setConversations((convosRes ?? []) as ConversationRow[]);
+
+        const now = new Date();
+        const thisMonthIncome = (txRes ?? [])
+          .filter((tx) => {
+            if (tx.status !== "success") return false;
+            const d = new Date(tx.created_at);
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+          })
+          .reduce((sum, tx) => sum + Number(tx.landlord_amount), 0);
+        setMonthlyIncome(thisMonthIncome);
       })
       .finally(() => setLoading(false));
   }, [profile?.id]);
@@ -90,7 +105,7 @@ function Overview() {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
         <div className="min-w-0">
           <h1 className="font-display text-2xl sm:text-3xl font-bold truncate">
-            Welcome back{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""} 👋
+            Welcome back{profile?.fullName ? `, ${profile.fullName.split(" ")[0]}` : ""} 👋
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Here's what's happening across your portfolio.</p>
         </div>
@@ -127,9 +142,10 @@ function Overview() {
             />
             <StatCard label="Property views" value={totalViews.toLocaleString()} icon={Eye} />
             <StatCard label="Scheduled visits" value={String(scheduledVisits)} icon={CalendarCheck} />
+            <StatCard label="Income this month" value={formatKsh(monthlyIncome)} icon={Wallet} />
           </div>
           <p className="mt-3 text-xs text-muted-foreground">
-            Monthly income and inquiry counts aren't tracked yet — those need a tenancy/lease table and historical event logging that don't exist in the schema yet.
+            Income is net of the 1% platform fee, based on M-Pesa payments received this calendar month. Inquiry counts still aren't tracked.
           </p>
 
           <div className="mt-10 grid lg:grid-cols-3 gap-6">
