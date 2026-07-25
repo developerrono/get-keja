@@ -64,11 +64,22 @@ function AddPropertyPage() {
   const toggleAmenity = (a: string) =>
     setAmenities((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]));
 
-  // ---- Media handlers ----
+const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|bmp|heic|heif|avif|tiff?)$/i;
+
+/** Some phones (esp. iPhones with HEIC) or camera apps report an empty or
+ *  generic `file.type`, which the old `file.type.startsWith("image/")` check
+ *  would silently reject. Fall back to checking the file extension. */
+function looksLikeImage(file: File) {
+  if (file.type.startsWith("image/")) return true;
+  if (!file.type && IMAGE_EXT_RE.test(file.name)) return true;
+  return false;
+}
+
+// ---- Media handlers ----
   const onCoverSelect = (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
+    if (!looksLikeImage(file)) {
       toast.error("Cover photo must be an image.");
       return;
     }
@@ -78,7 +89,7 @@ function AddPropertyPage() {
 
   const onGallerySelect = (files: FileList | null) => {
     if (!files) return;
-    const imgs = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    const imgs = Array.from(files).filter(looksLikeImage);
     if (imgs.length !== files.length) {
       toast.error("Only image files are allowed in the gallery.");
     }
@@ -197,7 +208,7 @@ function AddPropertyPage() {
           <div>
             <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cover photo</Label>
             <UploadDropzone
-              accept="image/*"
+              accept="image/*,.heic,.heif"
               onFiles={onCoverSelect}
               className="mt-1.5 aspect-video"
             >
@@ -268,7 +279,7 @@ function AddPropertyPage() {
                 </button>
               </div>
             ))}
-            <UploadDropzone accept="image/*" multiple onFiles={onGallerySelect} className="aspect-square">
+            <UploadDropzone accept="image/*,.heic,.heif" multiple onFiles={onGallerySelect} className="aspect-square">
               <EmptyUploadState icon={<Plus className="h-5 w-5" />} label="Add photos" compact />
             </UploadDropzone>
           </div>
@@ -369,33 +380,51 @@ function AddPropertyPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Google Maps pin picker                                             */
+/* Free map pin picker — Leaflet + OpenStreetMap (no API key, no cost) */
 /* ------------------------------------------------------------------ */
 
-let googleMapsLoadPromise: Promise<void> | null = null;
+let leafletLoadPromise: Promise<void> | null = null;
 
-function loadGoogleMaps(): Promise<void> {
-  if (typeof window !== "undefined" && (window as any).google?.maps) {
+function loadLeaflet(): Promise<void> {
+  if (typeof window !== "undefined" && (window as any).L) {
     return Promise.resolve();
   }
-  if (googleMapsLoadPromise) return googleMapsLoadPromise;
+  if (leafletLoadPromise) return leafletLoadPromise;
 
-  googleMapsLoadPromise = new Promise((resolve, reject) => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-    if (!apiKey) {
-      reject(new Error("Missing VITE_GOOGLE_MAPS_API_KEY"));
-      return;
+  leafletLoadPromise = new Promise((resolve, reject) => {
+    // CSS
+    if (!document.querySelector('link[data-leaflet]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      link.setAttribute("data-leaflet", "true");
+      document.head.appendChild(link);
     }
+    // JS
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
     script.async = true;
-    script.defer = true;
     script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load Google Maps"));
+    script.onerror = () => reject(new Error("Failed to load the map library"));
     document.head.appendChild(script);
   });
 
-  return googleMapsLoadPromise;
+  return leafletLoadPromise;
+}
+
+/** Free reverse geocoding via OpenStreetMap's Nominatim — no API key needed. */
+async function reverseGeocodeOsm(lat: number, lng: number) {
+  const res = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
+  );
+  if (!res.ok) throw new Error("Reverse geocode failed");
+  const data = await res.json();
+  const addr = data.address ?? {};
+  return {
+    county: addr.county || addr.state,
+    town: addr.town || addr.city || addr.suburb,
+    street: addr.road,
+  };
 }
 
 function GooglePinPicker({
@@ -410,63 +439,49 @@ function GooglePinPicker({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapObj = useRef<any>(null);
   const markerObj = useRef<any>(null);
-  const geocoderObj = useRef<any>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
 
   const placeMarker = (lat: number, lng: number) => {
-    const google = (window as any).google;
+    const L = (window as any).L;
     if (!mapObj.current) return;
     if (markerObj.current) {
-      markerObj.current.setPosition({ lat, lng });
+      markerObj.current.setLatLng([lat, lng]);
     } else {
-      markerObj.current = new google.maps.Marker({
-        position: { lat, lng },
-        map: mapObj.current,
-        draggable: true,
-      });
-      markerObj.current.addListener("dragend", () => {
-        const pos = markerObj.current.getPosition();
-        handlePinChange(pos.lat(), pos.lng());
+      markerObj.current = L.marker([lat, lng], { draggable: true }).addTo(mapObj.current);
+      markerObj.current.on("dragend", () => {
+        const pos = markerObj.current.getLatLng();
+        handlePinChange(pos.lat, pos.lng);
       });
     }
-    mapObj.current.panTo({ lat, lng });
+    mapObj.current.panTo([lat, lng]);
   };
 
   const handlePinChange = (lat: number, lng: number) => {
     onChange({ lat, lng });
-    if (geocoderObj.current && onReverseGeocode) {
-      geocoderObj.current.geocode({ location: { lat, lng } }, (results: any[], status: string) => {
-        if (status !== "OK" || !results?.[0]) return;
-        const components = results[0].address_components as any[];
-        const find = (type: string) => components.find((c) => c.types.includes(type))?.long_name;
-        onReverseGeocode({
-          county: find("administrative_area_level_1"),
-          town: find("locality") || find("administrative_area_level_2"),
-          street: find("route"),
+    if (onReverseGeocode) {
+      reverseGeocodeOsm(lat, lng)
+        .then(onReverseGeocode)
+        .catch(() => {
+          // Reverse geocoding is a nice-to-have; the pin itself still saved above.
         });
-      });
     }
   };
 
   useEffect(() => {
     let cancelled = false;
-    loadGoogleMaps()
+    loadLeaflet()
       .then(() => {
         if (cancelled || !mapRef.current) return;
-        const google = (window as any).google;
+        const L = (window as any).L;
         const center = coords ?? DEFAULT_CENTER;
-        mapObj.current = new google.maps.Map(mapRef.current, {
-          center,
-          zoom: coords ? 15 : 12,
-          streetViewControl: false,
-          mapTypeControl: false,
-          fullscreenControl: false,
-        });
-        geocoderObj.current = new google.maps.Geocoder();
+        mapObj.current = L.map(mapRef.current).setView([center.lat, center.lng], coords ? 15 : 12);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+        }).addTo(mapObj.current);
 
-        mapObj.current.addListener("click", (e: any) => {
-          const lat = e.latLng.lat();
-          const lng = e.latLng.lng();
+        mapObj.current.on("click", (e: any) => {
+          const { lat, lng } = e.latlng;
           placeMarker(lat, lng);
           handlePinChange(lat, lng);
         });
@@ -478,6 +493,11 @@ function GooglePinPicker({
 
     return () => {
       cancelled = true;
+      if (mapObj.current) {
+        mapObj.current.remove();
+        mapObj.current = null;
+        markerObj.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -503,9 +523,7 @@ function GooglePinPicker({
         <div>
           <MapPin className="h-8 w-8 mx-auto text-primary" />
           <p className="mt-2 text-sm font-semibold">Map unavailable</p>
-          <p className="text-xs text-muted-foreground">
-            Set VITE_GOOGLE_MAPS_API_KEY to enable the interactive map pin.
-          </p>
+          <p className="text-xs text-muted-foreground">Couldn't load the map right now — check your connection and try again.</p>
         </div>
       </div>
     );
@@ -516,7 +534,7 @@ function GooglePinPicker({
       <div className="relative rounded-2xl overflow-hidden border border-border aspect-[16/8]">
         <div ref={mapRef} className="h-full w-full" />
         {status === "loading" && (
-          <div className="absolute inset-0 grid place-items-center bg-surface">
+          <div className="absolute inset-0 grid place-items-center bg-surface z-[1000]">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         )}

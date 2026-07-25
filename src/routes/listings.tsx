@@ -17,11 +17,7 @@ export const Route = createFileRoute("/listings")({
       { name: "description", content: "Browse verified rental listings with advanced filters." },
     ],
   }),
-  component: () => (
-    <RequireAuth>
-      <ListingsPage />
-    </RequireAuth>
-  ),
+  component: ListingsPage,
 });
 
 const amenityOptions = ["WiFi", "Parking", "Furnished", "Water", "Security", "Pool"];

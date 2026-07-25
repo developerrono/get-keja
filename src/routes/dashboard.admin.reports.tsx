@@ -8,7 +8,14 @@ export const Route = createFileRoute("/dashboard/admin/reports")({ component: Re
 
 function Reports() {
   const [rows, setRows] = useState<DbReport[]>([]);
-  const load = () => adminListReports().then(setRows);
+  const [loading, setLoading] = useState(true);
+  const load = () => {
+    setLoading(true);
+    adminListReports()
+      .then(setRows)
+      .catch((err) => toast.error(err instanceof Error ? err.message : "Couldn't load reports"))
+      .finally(() => setLoading(false));
+  };
   useEffect(() => { load(); }, []);
   const set = async (id: string, status: DbReport["status"]) => {
     try { await adminUpdateReport(id, { status }); toast.success("Updated"); load(); } catch { toast.error("Failed"); }
@@ -34,7 +41,8 @@ function Reports() {
             </div>
           </div>
         ))}
-        {rows.length === 0 && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">No reports.</div>}
+        {loading && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">Loading...</div>}
+        {!loading && rows.length === 0 && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">No reports.</div>}
       </div>
     </div>
   );

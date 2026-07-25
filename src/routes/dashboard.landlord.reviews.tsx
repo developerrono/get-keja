@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { listReviewsForLandlord, replyToReview, type DbReview } from "@/lib/keja-api";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,23 @@ function ReviewsPage() {
   }, [user]);
 
   const avg = items.length ? items.reduce((s, r) => s + r.rating, 0) / items.length : 0;
+
+  // Group reviews by property, ordered so the property with the most reviews shows first.
+  const groups = useMemo(() => {
+    const byProperty = new Map<string, DbReview[]>();
+    for (const r of items) {
+      const key = r.property_name ?? "Other";
+      if (!byProperty.has(key)) byProperty.set(key, []);
+      byProperty.get(key)!.push(r);
+    }
+    return Array.from(byProperty.entries())
+      .map(([property, reviews]) => ({
+        property,
+        reviews,
+        avg: reviews.reduce((s, r) => s + r.rating, 0) / reviews.length,
+      }))
+      .sort((a, b) => b.reviews.length - a.reviews.length);
+  }, [items]);
 
   const reply = async (id: string) => {
     const text = drafts[id]?.trim();
@@ -78,7 +95,7 @@ function ReviewsPage() {
                   <Star key={i} className={`h-4 w-4 ${i < Math.round(avg) ? "fill-current" : ""}`} />
                 ))}
               </div>
-              <div className="text-xs text-muted-foreground mt-1">{items.length} reviews</div>
+              <div className="text-xs text-muted-foreground mt-1">{items.length} reviews across {groups.length} properties</div>
             </div>
             <div className="flex-1 min-w-[200px] space-y-1.5">
               {[5, 4, 3, 2, 1].map((n) => {
@@ -98,50 +115,64 @@ function ReviewsPage() {
             </div>
           </section>
 
-          <div className="mt-6 space-y-4">
-            {items.map((r) => (
-              <article key={r.id} className="rounded-2xl border border-border bg-card p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="grid place-items-center h-10 w-10 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
-                      {(r.tenant_name ?? "?").split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="font-semibold truncate">{r.tenant_name ?? "Tenant"}</div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {r.property_name} • {new Date(r.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex text-accent shrink-0">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`h-4 w-4 ${i < r.rating ? "fill-current" : ""}`} />
-                    ))}
+          <div className="mt-8 space-y-10">
+            {groups.map((g) => (
+              <section key={g.property}>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <h2 className="font-display font-bold text-lg truncate">{g.property}</h2>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
+                    <Star className="h-3.5 w-3.5 text-accent fill-current" />
+                    {g.avg.toFixed(1)} · {g.reviews.length} review{g.reviews.length !== 1 ? "s" : ""}
                   </div>
                 </div>
-                {r.body && <p className="mt-3 text-sm">{r.body}</p>}
 
-                {r.landlord_reply ? (
-                  <div className="mt-3 rounded-xl bg-primary-soft p-3">
-                    <div className="text-[11px] font-bold uppercase text-primary">Your reply</div>
-                    <p className="text-sm mt-1">{r.landlord_reply}</p>
-                  </div>
-                ) : (
-                  <div className="mt-3 space-y-2">
-                    <Textarea
-                      rows={2}
-                      value={drafts[r.id] ?? ""}
-                      onChange={(e) => setDrafts((d) => ({ ...d, [r.id]: e.target.value }))}
-                      placeholder="Reply to this review…"
-                    />
-                    <div className="flex justify-end">
-                      <Button size="sm" disabled={replyingId === r.id} onClick={() => reply(r.id)}>
-                        {replyingId === r.id ? "Posting…" : "Post reply"}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </article>
+                <div className="space-y-4">
+                  {g.reviews.map((r) => (
+                    <article key={r.id} className="rounded-2xl border border-border bg-card p-5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="grid place-items-center h-10 w-10 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0">
+                            {(r.tenant_name ?? "?").split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="font-semibold truncate">{r.tenant_name ?? "Tenant"}</div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {new Date(r.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex text-accent shrink-0">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={`h-4 w-4 ${i < r.rating ? "fill-current" : ""}`} />
+                          ))}
+                        </div>
+                      </div>
+                      {r.body && <p className="mt-3 text-sm">{r.body}</p>}
+
+                      {r.landlord_reply ? (
+                        <div className="mt-3 rounded-xl bg-primary-soft p-3">
+                          <div className="text-[11px] font-bold uppercase text-primary">Your reply</div>
+                          <p className="text-sm mt-1">{r.landlord_reply}</p>
+                        </div>
+                      ) : (
+                        <div className="mt-3 space-y-2">
+                          <Textarea
+                            rows={2}
+                            value={drafts[r.id] ?? ""}
+                            onChange={(e) => setDrafts((d) => ({ ...d, [r.id]: e.target.value }))}
+                            placeholder="Reply to this review…"
+                          />
+                          <div className="flex justify-end">
+                            <Button size="sm" disabled={replyingId === r.id} onClick={() => reply(r.id)}>
+                              {replyingId === r.id ? "Posting…" : "Post reply"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </section>
             ))}
           </div>
         </>

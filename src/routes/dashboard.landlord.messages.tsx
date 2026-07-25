@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { listConversations, listMessages, sendMessage, type DbMessage } from "@/lib/keja-api";
+import { listConversations, listMessages, sendMessage, adminListUsers, getOrCreateConversation, type DbMessage } from "@/lib/keja-api";
 import { useAuth } from "@/hooks/use-auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Send, Search } from "lucide-react";
+import { Send, Search, ShieldCheck } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/landlord/messages")({
   head: () => ({ meta: [{ title: "Messages — Landlord" }] }),
@@ -19,8 +20,10 @@ function MessagesPage() {
   const [msgs, setMsgs] = useState<DbMessage[]>([]);
   const [q, setQ] = useState("");
   const [draft, setDraft] = useState("");
+  const [contactingAdmin, setContactingAdmin] = useState(false);
 
-  useEffect(() => { if (user) listConversations(user.id).then(setConvos); }, [user]);
+  const loadConvos = () => { if (user) listConversations(user.id).then(setConvos); };
+  useEffect(loadConvos, [user]);
   useEffect(() => { if (activeId) listMessages(activeId).then(setMsgs); }, [activeId]);
 
   const active = convos.find((c) => c.id === activeId);
@@ -33,11 +36,36 @@ function MessagesPage() {
     listMessages(activeId).then(setMsgs);
   };
 
+  const contactAdmin = async () => {
+    if (!user) return;
+    setContactingAdmin(true);
+    try {
+      const users = await adminListUsers();
+      const admin = users.find((u: any) => (u.roles ?? [u.role]).includes("admin"));
+      if (!admin) {
+        toast.error("No admin account found to contact.");
+        return;
+      }
+      const convo = await getOrCreateConversation(user.id, admin.id);
+      await loadConvos();
+      setActiveId(convo.id);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't start a conversation with admin.");
+    } finally {
+      setContactingAdmin(false);
+    }
+  };
+
   return (
     <div className="h-[calc(100vh-3.5rem)] md:h-screen flex">
       <aside className="w-full sm:w-80 border-r border-border bg-card flex flex-col shrink-0">
         <div className="p-4 border-b border-border">
-          <h1 className="font-display font-bold text-lg">Messages</h1>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="font-display font-bold text-lg">Messages</h1>
+            <Button size="sm" variant="outline" className="gap-1.5 rounded-full" disabled={contactingAdmin} onClick={contactAdmin}>
+              <ShieldCheck className="h-3.5 w-3.5" /> {contactingAdmin ? "Contacting…" : "Contact admin"}
+            </Button>
+          </div>
           <div className="relative mt-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="pl-9" />

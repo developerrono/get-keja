@@ -13,7 +13,14 @@ function Verifications() {
   const { user } = useAuth();
   const [rows, setRows] = useState<Awaited<ReturnType<typeof adminListVerifications>>>([]);
   const [notes, setNotes] = useState<Record<string, string>>({});
-  const load = () => adminListVerifications().then(setRows);
+  const [loading, setLoading] = useState(true);
+  const load = () => {
+    setLoading(true);
+    adminListVerifications()
+      .then(setRows)
+      .catch((err) => toast.error(err instanceof Error ? err.message : "Couldn't load verifications"))
+      .finally(() => setLoading(false));
+  };
   useEffect(() => { load(); }, []);
 
   const act = async (id: string, status: "approved" | "rejected" | "info_requested") => {
@@ -54,7 +61,8 @@ function Verifications() {
             </div>
           );
         })}
-        {rows.length === 0 && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">No verification requests.</div>}
+        {loading && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">Loading...</div>}
+        {!loading && rows.length === 0 && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">No verification requests.</div>}
       </div>
     </div>
   );

@@ -44,6 +44,7 @@ import { Route as DashboardLandlordAnalyticsRouteImport } from './routes/dashboa
 import { Route as DashboardLandlordAddPropertyRouteImport } from './routes/dashboard.landlord.add-property'
 import { Route as DashboardAdminVerificationsRouteImport } from './routes/dashboard.admin.verifications'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
+import { Route as DashboardAdminTenantsRouteImport } from './routes/dashboard.admin.tenants'
 import { Route as DashboardAdminSettingsRouteImport } from './routes/dashboard.admin.settings'
 import { Route as DashboardAdminReviewsRouteImport } from './routes/dashboard.admin.reviews'
 import { Route as DashboardAdminReportsRouteImport } from './routes/dashboard.admin.reports'
@@ -238,6 +239,11 @@ const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => DashboardAdminRoute,
 } as any)
+const DashboardAdminTenantsRoute = DashboardAdminTenantsRouteImport.update({
+  id: '/tenants',
+  path: '/tenants',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
 const DashboardAdminSettingsRoute = DashboardAdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
   '/dashboard/admin/reviews': typeof DashboardAdminReviewsRoute
   '/dashboard/admin/settings': typeof DashboardAdminSettingsRoute
+  '/dashboard/admin/tenants': typeof DashboardAdminTenantsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/verifications': typeof DashboardAdminVerificationsRoute
   '/dashboard/landlord/add-property': typeof DashboardLandlordAddPropertyRoute
@@ -335,6 +342,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
   '/dashboard/admin/reviews': typeof DashboardAdminReviewsRoute
   '/dashboard/admin/settings': typeof DashboardAdminSettingsRoute
+  '/dashboard/admin/tenants': typeof DashboardAdminTenantsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/verifications': typeof DashboardAdminVerificationsRoute
   '/dashboard/landlord/add-property': typeof DashboardLandlordAddPropertyRoute
@@ -380,6 +388,7 @@ export interface FileRoutesById {
   '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
   '/dashboard/admin/reviews': typeof DashboardAdminReviewsRoute
   '/dashboard/admin/settings': typeof DashboardAdminSettingsRoute
+  '/dashboard/admin/tenants': typeof DashboardAdminTenantsRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/admin/verifications': typeof DashboardAdminVerificationsRoute
   '/dashboard/landlord/add-property': typeof DashboardLandlordAddPropertyRoute
@@ -426,6 +435,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/reports'
     | '/dashboard/admin/reviews'
     | '/dashboard/admin/settings'
+    | '/dashboard/admin/tenants'
     | '/dashboard/admin/users'
     | '/dashboard/admin/verifications'
     | '/dashboard/landlord/add-property'
@@ -467,6 +477,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/reports'
     | '/dashboard/admin/reviews'
     | '/dashboard/admin/settings'
+    | '/dashboard/admin/tenants'
     | '/dashboard/admin/users'
     | '/dashboard/admin/verifications'
     | '/dashboard/landlord/add-property'
@@ -511,6 +522,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/reports'
     | '/dashboard/admin/reviews'
     | '/dashboard/admin/settings'
+    | '/dashboard/admin/tenants'
     | '/dashboard/admin/users'
     | '/dashboard/admin/verifications'
     | '/dashboard/landlord/add-property'
@@ -798,6 +810,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminUsersRouteImport
       parentRoute: typeof DashboardAdminRoute
     }
+    '/dashboard/admin/tenants': {
+      id: '/dashboard/admin/tenants'
+      path: '/tenants'
+      fullPath: '/dashboard/admin/tenants'
+      preLoaderRoute: typeof DashboardAdminTenantsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
     '/dashboard/admin/settings': {
       id: '/dashboard/admin/settings'
       path: '/settings'
@@ -858,6 +877,7 @@ interface DashboardAdminRouteChildren {
   DashboardAdminReportsRoute: typeof DashboardAdminReportsRoute
   DashboardAdminReviewsRoute: typeof DashboardAdminReviewsRoute
   DashboardAdminSettingsRoute: typeof DashboardAdminSettingsRoute
+  DashboardAdminTenantsRoute: typeof DashboardAdminTenantsRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
   DashboardAdminVerificationsRoute: typeof DashboardAdminVerificationsRoute
   DashboardAdminIndexRoute: typeof DashboardAdminIndexRoute
@@ -871,6 +891,7 @@ const DashboardAdminRouteChildren: DashboardAdminRouteChildren = {
   DashboardAdminReportsRoute: DashboardAdminReportsRoute,
   DashboardAdminReviewsRoute: DashboardAdminReviewsRoute,
   DashboardAdminSettingsRoute: DashboardAdminSettingsRoute,
+  DashboardAdminTenantsRoute: DashboardAdminTenantsRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
   DashboardAdminVerificationsRoute: DashboardAdminVerificationsRoute,
   DashboardAdminIndexRoute: DashboardAdminIndexRoute,

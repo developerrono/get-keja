@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   Home, LayoutDashboard, Users, Building2, ShieldCheck, Flag, Star,
-  BarChart3, Bell, Settings, Menu, X, LogOut, UserCog,
+  BarChart3, Bell, Settings, Menu, X, LogOut, UserCog, UserCheck, Landmark,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,12 @@ const items = [
   { to: "/dashboard/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/dashboard/admin/users", label: "Users", icon: Users },
   { to: "/dashboard/admin/landlords", label: "Landlords", icon: UserCog },
+  { to: "/dashboard/admin/tenants", label: "Tenants", icon: UserCheck },
   { to: "/dashboard/admin/properties", label: "Properties", icon: Building2 },
   { to: "/dashboard/admin/verifications", label: "Verification", icon: ShieldCheck },
   { to: "/dashboard/admin/reports", label: "Reports", icon: Flag },
   { to: "/dashboard/admin/reviews", label: "Reviews", icon: Star },
+  { to: "/dashboard/admin/transactions", label: "Transactions", icon: Landmark },
   { to: "/dashboard/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/dashboard/admin/notifications", label: "Notifications", icon: Bell },
   { to: "/dashboard/admin/settings", label: "Settings", icon: Settings },

@@ -6,19 +6,30 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/admin/properties")({ component: Props });
 
+// Pending listings need admin attention first, so they sort to the top.
+const STATUS_ORDER: Record<string, number> = { pending: 0, active: 1, hidden: 2, rejected: 3 };
+
 function Props() {
   const [rows, setRows] = useState<DbProperty[]>([]);
-  const load = () => adminListProperties().then(setRows);
+  const [loading, setLoading] = useState(true);
+  const load = () => {
+    setLoading(true);
+    adminListProperties()
+      .then(setRows)
+      .catch((err) => toast.error(err instanceof Error ? err.message : "Couldn't load properties"))
+      .finally(() => setLoading(false));
+  };
   useEffect(() => { load(); }, []);
   const setStatus = async (id: string, status: DbProperty["status"]) => {
     try { await adminUpdateProperty(id, { status }); toast.success(`Marked ${status}`); load(); }
     catch { toast.error("Update failed"); }
   };
+  const sorted = [...rows].sort((a, b) => (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99));
   return (
     <div className="p-6 lg:p-10">
       <h1 className="font-display text-2xl md:text-3xl font-bold">Property moderation</h1>
       <div className="mt-6 space-y-3">
-        {rows.map((p) => (
+        {sorted.map((p) => (
           <div key={p.id} className="rounded-2xl border border-border bg-card p-4 flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-0">
               <div className="font-semibold truncate">{p.name}</div>
@@ -32,7 +43,8 @@ function Props() {
             </div>
           </div>
         ))}
-        {rows.length === 0 && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">No properties yet.</div>}
+        {loading && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">Loading...</div>}
+        {!loading && rows.length === 0 && <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">No properties yet.</div>}
       </div>
     </div>
   );
