@@ -20,7 +20,8 @@ return [
     // run `ngrok http 80` (or whatever port XAMPP/Apache listens on) and
     // put the ngrok https URL here, e.g.:
     // https://a1b2c3d4.ngrok-free.app/get-keja-backend/mpesa-callback.php
-    'callback_url' => 'https://YOUR-NGROK-OR-PUBLIC-DOMAIN/get-keja-backend/mpesa-callback.php',
+   'callback_url' => 'https://system-jargon-attention.ngrok-free.dev/get-keja-backend/mpesa-callback.php',
 
     'admin_fee_percent' => 0.01, // 1%
 ];
+

@@ -221,6 +221,19 @@ try {
             $stmt->bind_param("isss", $authorId, $category, $title, $body);
             $stmt->execute();
             $stmt->close();
+
+            // admin_announcements is just an audit log of what was sent — it's
+            // never read by the tenant/landlord notification bell. That bell
+            // reads the `notifications` table, so without this insert the
+            // announcement would silently never reach anyone. Fan it out to
+            // every user as a real notification row.
+            $notifStmt = $conn->prepare(
+                "INSERT INTO notifications (user_id, type, title, body) SELECT id, 'announcement', ?, ? FROM users"
+            );
+            $notifStmt->bind_param("ss", $title, $body);
+            $notifStmt->execute();
+            $notifStmt->close();
+
             echo json_encode(["success" => true]);
             exit;
         }
