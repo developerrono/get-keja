@@ -1,6 +1,24 @@
 import { Link } from "@tanstack/react-router";
 import { Facebook, Instagram, Twitter, Home } from "lucide-react";
 
+const FOOTER_LINKS = {
+  Company: [
+    { label: "About", to: "/about" },
+    { label: "Careers", to: "/careers" },
+    { label: "Press", to: "/press" },
+  ],
+  Support: [
+    { label: "Contact", to: "/contact" },
+    { label: "Help center", to: "/help" },
+    { label: "Report listing", to: "/report" },
+  ],
+  Legal: [
+    { label: "Privacy policy", to: "/privacy" },
+    { label: "Terms", to: "/terms" },
+    { label: "Cookies", to: "/cookies" },
+  ],
+} as const;
+
 export function Footer() {
   return (
     <footer className="mt-24 border-t border-border bg-surface">
@@ -16,9 +34,9 @@ export function Footer() {
             Find verified rental houses and apartments around you in real time.
           </p>
         </div>
-        <FooterCol title="Company" items={["About", "Careers", "Press"]} />
-        <FooterCol title="Support" items={["Contact", "Help center", "Report listing"]} />
-        <FooterCol title="Legal" items={["Privacy policy", "Terms", "Cookies"]} />
+        <FooterCol title="Company" items={FOOTER_LINKS.Company} />
+        <FooterCol title="Support" items={FOOTER_LINKS.Support} />
+        <FooterCol title="Legal" items={FOOTER_LINKS.Legal} />
       </div>
       <div className="border-t border-border">
         <div className="container-page py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -36,15 +54,15 @@ export function Footer() {
   );
 }
 
-function FooterCol({ title, items }: { title: string; items: string[] }) {
+function FooterCol({ title, items }: { title: string; items: readonly { label: string; to: string }[] }) {
   return (
     <div>
       <h4 className="text-sm font-semibold mb-3">{title}</h4>
       <ul className="space-y-2">
         {items.map((i) => (
-          <li key={i}>
-            <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {i}
+          <li key={i.label}>
+            <Link to={i.to as never} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {i.label}
             </Link>
           </li>
         ))}

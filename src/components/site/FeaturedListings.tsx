@@ -1,18 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
-import { getProperties } from "@/lib/properties";
-import { PropertyCard } from "./PropertyCard";
+import { fetchProperties } from "@/lib/keja-api";
+import { PropertyCardDB } from "./PropertyCardDB";
 
 export function FeaturedListings() {
-  // Fetch live properties from your XAMPP get_listings.php endpoint
-  const { data: propertiesList, isLoading, error } = useQuery({
-    queryKey: ["properties"],
-    queryFn: getProperties,
+  // Same data path as the rest of the app (tenant feed, search, etc) — hits
+  // get-properties.php via keja-api, not the old disconnected lib/properties.
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["properties", "featured"],
+    queryFn: () => fetchProperties({ limit: 6, sort: "newest", status: "active" }),
   });
+
+  const properties = data?.rows ?? [];
 
   if (isLoading) {
     return (
       <div className="py-12 text-center text-gray-500">
-        Loading properties from local XAMPP backend...
+        Loading properties...
       </div>
     );
   }
@@ -20,7 +23,7 @@ export function FeaturedListings() {
   if (error) {
     return (
       <div className="py-12 text-center text-red-500">
-        Failed to connect to local database server.
+        Couldn't load properties right now. Please try again shortly.
       </div>
     );
   }
@@ -36,14 +39,14 @@ export function FeaturedListings() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {propertiesList?.map((property) => (
-            <PropertyCard key={property.id} property={property} />
+          {properties.map((property) => (
+            <PropertyCardDB key={property.id} property={property} />
           ))}
         </div>
-        
-        {propertiesList?.length === 0 && (
+
+        {properties.length === 0 && (
           <div className="text-center text-gray-500 py-8">
-            No properties found in your database table.
+            No properties found yet.
           </div>
         )}
       </div>
