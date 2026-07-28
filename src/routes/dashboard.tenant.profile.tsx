@@ -29,9 +29,9 @@ function TenantProfile() {
   useEffect(() => {
     if (!profile) return;
     const loaded = {
-      fullName: profile.fullName ?? "",
+      fullName: profile.full_name ?? "",
       phone: profile.phone ?? "",
-      bio: profile.bio ?? "",
+      bio: (profile as any).bio ?? "",
       avatarUrl: profile.avatar_url ?? null,
     };
     setFullName(loaded.fullName);
@@ -73,7 +73,8 @@ function TenantProfile() {
     if (!user) return;
     setSaving(true);
     try {
-      await updateProfile(user.id, {
+      await updateProfile({
+        user_id: user.id,
         full_name: fullName,
         phone,
         bio,

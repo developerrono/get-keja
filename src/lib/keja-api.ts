@@ -208,6 +208,18 @@ export async function uploadPropertyMedia(file: File, folder: string): Promise<s
   return json.url as string;
 }
 
+export async function uploadImage(file: File): Promise<string> {
+  const fd = new FormData();
+  fd.append("image", file);
+  const res = await fetch(`${API_BASE}/upload-image.php`, {
+    method: "POST",
+    body: fd, // no Content-Type header — the browser sets the multipart boundary itself
+  });
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || "Image upload failed.");
+  return json.url as string;
+}
+
 // ---- Auth ----
 export async function loginWithXampp(email: string, password: string) {
   const json = await apiPost("login.php", { email, password });
