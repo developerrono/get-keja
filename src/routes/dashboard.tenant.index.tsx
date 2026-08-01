@@ -29,7 +29,7 @@ function TenantHome() {
     <div className="p-6 lg:p-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-bold">Welcome back, {profile?.fullName?.split(" ")[0] ?? "friend"} 👋</h1>
+          <h1 className="font-display text-3xl font-bold">Welcome back, {profile?.full_name?.split(" ")[0] ?? "friend"} 👋</h1>
           <p className="text-sm text-muted-foreground mt-1">Here's what's happening with your hunt.</p>
         </div>
         <Link to="/dashboard/tenant/search" className="inline-flex items-center gap-2 px-4 h-10 rounded-full border border-border bg-card text-sm hover:bg-muted">
