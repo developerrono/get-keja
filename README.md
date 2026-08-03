@@ -165,7 +165,7 @@ Get-Keja/
 ## Clone the Repository
 
 ```bash
-git clone https://github.com/developer.rono/get-keja.git
+git clone https://github.com/developerrono/get-keja.git
 ```
 
 ```bash
