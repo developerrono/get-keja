@@ -9,7 +9,7 @@ import {
   type DbTransaction,
 } from "@/lib/keja-api";
 import { PayRentCard } from "@/components/tenant/PayRentCard";
-import { CheckCircle2, Clock, XCircle, Loader2, Home } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, Loader2, Home, Receipt as ReceiptIcon, X } from "lucide-react";
 import { format } from "date-fns";
 
 export const Route = createFileRoute("/dashboard/tenant/rent")({
@@ -22,6 +22,7 @@ function MyRentPage() {
   const [tenancies, setTenancies] = useState<DbTenancy[]>([]);
   const [transactions, setTransactions] = useState<DbTransaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [receiptTx, setReceiptTx] = useState<DbTransaction | null>(null);
 
   const load = () => {
     if (!user) return;
@@ -112,6 +113,7 @@ function MyRentPage() {
                   <th className="text-right p-3">Amount</th>
                   <th className="text-left p-3">Status</th>
                   <th className="text-left p-3">Date</th>
+                  <th className="text-right p-3">Receipt</th>
                 </tr>
               </thead>
               <tbody>
@@ -121,6 +123,19 @@ function MyRentPage() {
                     <td className="p-3 text-right font-semibold">{formatKsh(tx.amount)}</td>
                     <td className="p-3"><StatusBadge status={tx.status} /></td>
                     <td className="p-3 text-muted-foreground">{format(new Date(tx.created_at), "d MMM, HH:mm")}</td>
+                    <td className="p-3 text-right">
+                      {tx.status === "success" ? (
+                        <button
+                          onClick={() => setReceiptTx(tx)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                        >
+                          <ReceiptIcon className="h-3.5 w-3.5" />
+                          View
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -128,6 +143,15 @@ function MyRentPage() {
           </div>
         )}
       </section>
+
+      {receiptTx && (
+        <ReceiptModal
+          transaction={receiptTx}
+          tenancy={active}
+          tenantName={user?.name ?? user?.email ?? "Tenant"}
+          onClose={() => setReceiptTx(null)}
+        />
+      )}
     </div>
   );
 }
@@ -144,4 +168,145 @@ function StatusBadge({ status }: { status: DbTransaction["status"] }) {
       <Icon className="h-3.5 w-3.5" /> {status}
     </span>
   );
+}
+
+/**
+ * Receipt generator: renders a formatted receipt for a successful transaction
+ * inside a modal, and can print/export it to PDF via the browser's native
+ * print dialog (no extra PDF dependency required).
+ */
+function ReceiptModal({
+  transaction,
+  tenancy,
+  tenantName,
+  onClose,
+}: {
+  transaction: DbTransaction;
+  tenancy: DbTenancy | undefined;
+  tenantName: string;
+  onClose: () => void;
+}) {
+  const receiptNo = `GK-${String(transaction.id).slice(0, 8).toUpperCase()}`;
+  const paidOn = format(new Date(transaction.created_at), "d MMM yyyy, HH:mm");
+
+  const handleDownload = () => {
+    const html = buildReceiptHtml({
+      receiptNo,
+      tenantName,
+      propertyName: transaction.property_name ?? tenancy?.property_name ?? "—",
+      unitLabel: tenancy?.unit_label,
+      amount: formatKsh(transaction.amount),
+      paidOn,
+      status: transaction.status,
+    });
+
+    const printWindow = window.open("", "_blank", "width=420,height=640");
+    if (!printWindow) return;
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    // Give the window a moment to render before invoking print (Save as PDF).
+    setTimeout(() => printWindow.print(), 250);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="text-center mb-5">
+          <ReceiptIcon className="h-6 w-6 mx-auto text-primary" />
+          <h3 className="font-display font-bold text-lg mt-2">Payment receipt</h3>
+          <p className="text-xs text-muted-foreground">{receiptNo}</p>
+        </div>
+
+        <dl className="space-y-3 text-sm">
+          <Row label="Tenant" value={tenantName} />
+          <Row label="Property" value={transaction.property_name ?? tenancy?.property_name ?? "—"} />
+          {tenancy?.unit_label && <Row label="Unit" value={tenancy.unit_label} />}
+          <Row label="Amount paid" value={formatKsh(transaction.amount)} bold />
+          <Row label="Status" value={transaction.status} />
+          <Row label="Date" value={paidOn} />
+        </dl>
+
+        <button
+          onClick={handleDownload}
+          className="mt-6 w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:opacity-90 transition"
+        >
+          Download / Print receipt
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value, bold }: { label: string; value: string; bold?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className={`capitalize ${bold ? "font-bold" : "font-medium"}`}>{value}</dd>
+    </div>
+  );
+}
+
+function buildReceiptHtml(data: {
+  receiptNo: string;
+  tenantName: string;
+  propertyName: string;
+  unitLabel?: string | null;
+  amount: string;
+  paidOn: string;
+  status: string;
+}) {
+  return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Receipt ${data.receiptNo}</title>
+    <style>
+      body { font-family: -apple-system, Helvetica, Arial, sans-serif; padding: 32px; color: #111; }
+      .brand { font-weight: 800; font-size: 20px; margin-bottom: 4px; }
+      .sub { color: #666; font-size: 12px; margin-bottom: 24px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      td { padding: 8px 0; font-size: 14px; border-bottom: 1px solid #eee; }
+      td:first-child { color: #666; }
+      td:last-child { text-align: right; font-weight: 600; text-transform: capitalize; }
+      .total td { font-size: 16px; font-weight: 800; border-bottom: none; padding-top: 14px; }
+      .footer { margin-top: 32px; font-size: 11px; color: #999; text-align: center; }
+    </style>
+  </head>
+  <body>
+    <div class="brand">GetKeja</div>
+    <div class="sub">Receipt ${data.receiptNo}</div>
+    <table>
+      <tr><td>Tenant</td><td>${escapeHtml(data.tenantName)}</td></tr>
+      <tr><td>Property</td><td>${escapeHtml(data.propertyName)}</td></tr>
+      ${data.unitLabel ? `<tr><td>Unit</td><td>${escapeHtml(data.unitLabel)}</td></tr>` : ""}
+      <tr><td>Status</td><td>${escapeHtml(data.status)}</td></tr>
+      <tr><td>Date</td><td>${escapeHtml(data.paidOn)}</td></tr>
+      <tr class="total"><td>Amount paid</td><td>${escapeHtml(data.amount)}</td></tr>
+    </table>
+    <div class="footer">This is a system-generated receipt from GetKeja.</div>
+  </body>
+</html>`;
+}
+
+function escapeHtml(str: string) {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
