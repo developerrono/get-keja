@@ -589,3 +589,31 @@ export async function adminListTransactions() {
   const json = await apiGet("transactions.php", { admin: "1" });
   return json.data as DbTransaction[];
 }
+export type DbPayout = {
+  id: string;
+  landlord_id: string;
+  amount: number;
+  phone: string;
+  status: "pending" | "paid" | "rejected";
+  requested_at: string;
+  paid_at: string | null;
+  mpesa_reference: string | null;
+};
+
+/* -------------------- Payouts -------------------- */
+
+export async function listPayoutsForLandlord(landlordId: string) {
+  const json = await apiGet("payouts.php", { landlord_id: landlordId });
+  return {
+    rows: json.data as DbPayout[],
+    availableBalance: Number(json.available_balance) as number,
+  };
+}
+
+export async function requestPayout(input: {
+  landlord_id: string;
+  amount: number;
+  phone: string;
+}) {
+  await apiPost("payouts.php", { action: "request", ...input });
+}
