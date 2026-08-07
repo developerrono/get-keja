@@ -595,10 +595,29 @@ export type DbPayout = {
   amount: number;
   phone: string;
   status: "pending" | "paid" | "rejected";
-  requested_at: string;
-  paid_at: string | null;
+  admin_notes: string | null;
   mpesa_reference: string | null;
+  requested_at: string;
+  processed_at: string | null;
+  // Only present when fetched via adminListPayouts() (joined from users table)
+  landlord_name?: string;
+  landlord_email?: string;
 };
+ 
+// Then add these three functions anywhere near your other admin/transaction functions:
+ 
+export async function adminListPayouts() {
+  const json = await apiGet("payouts.php", { admin: "1" });
+  return json.data as DbPayout[];
+}
+ 
+export async function adminMarkPayoutPaid(id: string, mpesaReference?: string) {
+  await apiPost("payouts.php", { action: "mark_paid", id, mpesa_reference: mpesaReference ?? null });
+}
+ 
+export async function adminRejectPayout(id: string, adminNotes?: string) {
+  await apiPost("payouts.php", { action: "reject", id, admin_notes: adminNotes ?? null });
+}
 
 /* -------------------- Payouts -------------------- */
 

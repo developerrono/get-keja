@@ -59,6 +59,7 @@ import { Route as DashboardAdminSettingsRouteImport } from './routes/dashboard.a
 import { Route as DashboardAdminReviewsRouteImport } from './routes/dashboard.admin.reviews'
 import { Route as DashboardAdminReportsRouteImport } from './routes/dashboard.admin.reports'
 import { Route as DashboardAdminPropertiesRouteImport } from './routes/dashboard.admin.properties'
+import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.admin.payouts'
 import { Route as DashboardAdminNotificationsRouteImport } from './routes/dashboard.admin.notifications'
 import { Route as DashboardAdminLandlordsRouteImport } from './routes/dashboard.admin.landlords'
 import { Route as DashboardAdminAnalyticsRouteImport } from './routes/dashboard.admin.analytics'
@@ -326,6 +327,11 @@ const DashboardAdminPropertiesRoute =
     path: '/properties',
     getParentRoute: () => DashboardAdminRoute,
   } as any)
+const DashboardAdminPayoutsRoute = DashboardAdminPayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => DashboardAdminRoute,
+} as any)
 const DashboardAdminNotificationsRoute =
   DashboardAdminNotificationsRouteImport.update({
     id: '/notifications',
@@ -366,6 +372,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/analytics': typeof DashboardAdminAnalyticsRoute
   '/dashboard/admin/landlords': typeof DashboardAdminLandlordsRoute
   '/dashboard/admin/notifications': typeof DashboardAdminNotificationsRoute
+  '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/properties': typeof DashboardAdminPropertiesRoute
   '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
   '/dashboard/admin/reviews': typeof DashboardAdminReviewsRoute
@@ -418,6 +425,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin/analytics': typeof DashboardAdminAnalyticsRoute
   '/dashboard/admin/landlords': typeof DashboardAdminLandlordsRoute
   '/dashboard/admin/notifications': typeof DashboardAdminNotificationsRoute
+  '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/properties': typeof DashboardAdminPropertiesRoute
   '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
   '/dashboard/admin/reviews': typeof DashboardAdminReviewsRoute
@@ -474,6 +482,7 @@ export interface FileRoutesById {
   '/dashboard/admin/analytics': typeof DashboardAdminAnalyticsRoute
   '/dashboard/admin/landlords': typeof DashboardAdminLandlordsRoute
   '/dashboard/admin/notifications': typeof DashboardAdminNotificationsRoute
+  '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/properties': typeof DashboardAdminPropertiesRoute
   '/dashboard/admin/reports': typeof DashboardAdminReportsRoute
   '/dashboard/admin/reviews': typeof DashboardAdminReviewsRoute
@@ -531,6 +540,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/analytics'
     | '/dashboard/admin/landlords'
     | '/dashboard/admin/notifications'
+    | '/dashboard/admin/payouts'
     | '/dashboard/admin/properties'
     | '/dashboard/admin/reports'
     | '/dashboard/admin/reviews'
@@ -583,6 +593,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/analytics'
     | '/dashboard/admin/landlords'
     | '/dashboard/admin/notifications'
+    | '/dashboard/admin/payouts'
     | '/dashboard/admin/properties'
     | '/dashboard/admin/reports'
     | '/dashboard/admin/reviews'
@@ -638,6 +649,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/analytics'
     | '/dashboard/admin/landlords'
     | '/dashboard/admin/notifications'
+    | '/dashboard/admin/payouts'
     | '/dashboard/admin/properties'
     | '/dashboard/admin/reports'
     | '/dashboard/admin/reviews'
@@ -1045,6 +1057,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminPropertiesRouteImport
       parentRoute: typeof DashboardAdminRoute
     }
+    '/dashboard/admin/payouts': {
+      id: '/dashboard/admin/payouts'
+      path: '/payouts'
+      fullPath: '/dashboard/admin/payouts'
+      preLoaderRoute: typeof DashboardAdminPayoutsRouteImport
+      parentRoute: typeof DashboardAdminRoute
+    }
     '/dashboard/admin/notifications': {
       id: '/dashboard/admin/notifications'
       path: '/notifications'
@@ -1073,6 +1092,7 @@ interface DashboardAdminRouteChildren {
   DashboardAdminAnalyticsRoute: typeof DashboardAdminAnalyticsRoute
   DashboardAdminLandlordsRoute: typeof DashboardAdminLandlordsRoute
   DashboardAdminNotificationsRoute: typeof DashboardAdminNotificationsRoute
+  DashboardAdminPayoutsRoute: typeof DashboardAdminPayoutsRoute
   DashboardAdminPropertiesRoute: typeof DashboardAdminPropertiesRoute
   DashboardAdminReportsRoute: typeof DashboardAdminReportsRoute
   DashboardAdminReviewsRoute: typeof DashboardAdminReviewsRoute
@@ -1088,6 +1108,7 @@ const DashboardAdminRouteChildren: DashboardAdminRouteChildren = {
   DashboardAdminAnalyticsRoute: DashboardAdminAnalyticsRoute,
   DashboardAdminLandlordsRoute: DashboardAdminLandlordsRoute,
   DashboardAdminNotificationsRoute: DashboardAdminNotificationsRoute,
+  DashboardAdminPayoutsRoute: DashboardAdminPayoutsRoute,
   DashboardAdminPropertiesRoute: DashboardAdminPropertiesRoute,
   DashboardAdminReportsRoute: DashboardAdminReportsRoute,
   DashboardAdminReviewsRoute: DashboardAdminReviewsRoute,
