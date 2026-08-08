@@ -1,12 +1,3 @@
-import { createFileRoute } from '@tanstack/react-router'
-
-export const Route = createFileRoute('/dashboard/admin/payouts')({
-  component: RouteComponent,
-})
-
-function RouteComponent() {
-  return <div>Hello "/dashboard/admin/payouts"!</div>
-}
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { adminListPayouts, adminMarkPayoutPaid, adminRejectPayout, formatKsh, type DbPayout } from "@/lib/keja-api";
