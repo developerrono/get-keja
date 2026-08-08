@@ -1,7 +1,16 @@
+import { createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/dashboard/admin/payouts')({
+  component: RouteComponent,
+})
+
+function RouteComponent() {
+  return <div>Hello "/dashboard/admin/payouts"!</div>
+}
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { adminListPayouts, adminMarkPayoutPaid, adminRejectPayout, formatKsh, type DbPayout } from "@/lib/keja-api";
-import { CheckCircle2, Clock, XCircle, Loader2, X, Wallet } from "lucide-react";
+import { CheckCircle2, Clock, XCircle, Loader2, X, Wallet, Receipt as ReceiptIcon, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
@@ -15,6 +24,7 @@ function AdminPayoutsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"pending" | "paid" | "rejected" | "all">("pending");
   const [actionPayout, setActionPayout] = useState<{ payout: DbPayout; kind: "pay" | "reject" } | null>(null);
+  const [receiptPayout, setReceiptPayout] = useState<DbPayout | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -114,9 +124,17 @@ function AdminPayoutsPage() {
                         </button>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground">
-                        {p.processed_at ? format(new Date(p.processed_at), "d MMM, HH:mm") : "—"}
-                      </span>
+                      <div className="flex justify-end items-center gap-3">
+                        <span className="text-xs text-muted-foreground">
+                          {p.processed_at ? format(new Date(p.processed_at), "d MMM, HH:mm") : "—"}
+                        </span>
+                        <button
+                          onClick={() => setReceiptPayout(p)}
+                          className="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          <ReceiptIcon className="h-3.5 w-3.5" /> Receipt
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -136,6 +154,10 @@ function AdminPayoutsPage() {
             load();
           }}
         />
+      )}
+
+      {receiptPayout && (
+        <ReceiptModal payout={receiptPayout} onClose={() => setReceiptPayout(null)} />
       )}
     </div>
   );
@@ -257,6 +279,89 @@ function PayoutActionModal({
           {submitting ? "Saving…" : kind === "pay" ? "Confirm paid" : "Confirm reject"}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Printable receipt for a single processed payout (paid or rejected).
+ * Uses the browser's native print dialog (Print to PDF) so no extra
+ * PDF-generation dependency is required.
+ */
+function ReceiptModal({ payout, onClose }: { payout: DbPayout; onClose: () => void }) {
+  const isPaid = payout.status === "paid";
+  const receiptNo = `KJ-${payout.id.toString().padStart(6, "0")}`;
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 print:bg-white print:p-0" onClick={onClose}>
+      <div
+        id="receipt-print-area"
+        className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 relative print:rounded-none print:border-none print:shadow-none print:w-full print:max-w-none"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground print:hidden"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="text-center border-b border-dashed border-border pb-4">
+          <h3 className="font-display font-bold text-lg">Payout Receipt</h3>
+          <p className="text-xs text-muted-foreground mt-1">{receiptNo}</p>
+        </div>
+
+        <dl className="mt-4 space-y-2.5 text-sm">
+          <Row label="Status">
+            <StatusBadge status={payout.status} />
+          </Row>
+          <Row label="Landlord" value={payout.landlord_name ?? "—"} />
+          <Row label="Email" value={payout.landlord_email ?? "—"} />
+          <Row label="Phone (M-Pesa)" value={payout.phone} />
+          <Row label="Amount" value={formatKsh(payout.amount)} emphasis />
+          <Row label="Requested" value={format(new Date(payout.requested_at), "d MMM yyyy, HH:mm")} />
+          <Row
+            label={isPaid ? "Paid on" : "Processed on"}
+            value={payout.processed_at ? format(new Date(payout.processed_at), "d MMM yyyy, HH:mm") : "—"}
+          />
+          {isPaid ? (
+            <Row label="M-Pesa reference" value={payout.mpesa_reference ?? "—"} />
+          ) : (
+            <Row label="Reason" value={payout.admin_notes ?? "—"} />
+          )}
+        </dl>
+
+        <p className="mt-5 pt-4 border-t border-dashed border-border text-[11px] text-center text-muted-foreground">
+          This receipt confirms an M-Pesa transaction sent manually by an admin. It is not an automated payment
+          confirmation from Safaricom.
+        </p>
+
+        <button
+          onClick={() => window.print()}
+          className="mt-5 w-full rounded-xl py-2.5 text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 inline-flex items-center justify-center gap-2 print:hidden"
+        >
+          <Printer className="h-4 w-4" /> Print / Save as PDF
+        </button>
+      </div>
+
+      {/* Print styles: hide everything except the receipt card when printing */}
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #receipt-print-area, #receipt-print-area * { visibility: visible; }
+          #receipt-print-area { position: fixed; inset: 0; margin: auto; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function Row({ label, value, emphasis, children }: { label: string; value?: string; emphasis?: boolean; children?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className={emphasis ? "font-display font-bold" : "font-medium text-right"}>{children ?? value}</dd>
     </div>
   );
 }
