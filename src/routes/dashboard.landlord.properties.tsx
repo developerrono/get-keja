@@ -239,9 +239,11 @@ function PropertiesPage() {
                     <Link to={`/property/${p.id}` as never}>
                       <Button variant="outline" size="sm" className="gap-1 w-full"><Eye className="h-3.5 w-3.5" /> View</Button>
                     </Link>
-                    <Button variant="outline" size="sm" className="gap-1" onClick={() => toast.info("Edit form coming soon")}>
-                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    <Link to={`/dashboard/landlord/edit-property/${p.id}` as never}>
+                   <Button variant="outline" size="sm" className="gap-1 w-full">
+                   <Pencil className="h-3.5 w-3.5" /> Edit
                     </Button>
+                      </Link>
                     <Button variant="ghost" size="sm" className="gap-1 text-accent" disabled={isBusy} onClick={() => setAllUnits(p.id, "vacant")}>
                       <DoorOpen className="h-3.5 w-3.5" /> Mark vacant
                     </Button>

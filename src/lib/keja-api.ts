@@ -636,3 +636,8 @@ export async function requestPayout(input: {
 }) {
   await apiPost("payouts.php", { action: "request", ...input });
 }
+/** Replaces every unit on a property with the given set. Requires update-property.php
+ *  to handle a `units` key (see note above) — it doesn't yet. */
+export async function updatePropertyUnits(propertyId: string, units: CreatePropertyUnit[]) {
+  await apiPost("update-property.php", { id: propertyId, units });
+}

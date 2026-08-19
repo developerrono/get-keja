@@ -63,6 +63,7 @@ import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.ad
 import { Route as DashboardAdminNotificationsRouteImport } from './routes/dashboard.admin.notifications'
 import { Route as DashboardAdminLandlordsRouteImport } from './routes/dashboard.admin.landlords'
 import { Route as DashboardAdminAnalyticsRouteImport } from './routes/dashboard.admin.analytics'
+import { Route as DashboardLandlordEditPropertyIdRouteImport } from './routes/dashboard.landlord.edit-property.$id'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -348,6 +349,12 @@ const DashboardAdminAnalyticsRoute = DashboardAdminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => DashboardAdminRoute,
 } as any)
+const DashboardLandlordEditPropertyIdRoute =
+  DashboardLandlordEditPropertyIdRouteImport.update({
+    id: '/edit-property/$id',
+    path: '/edit-property/$id',
+    getParentRoute: () => DashboardLandlordRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -404,6 +411,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
   '/dashboard/landlord/': typeof DashboardLandlordIndexRoute
   '/dashboard/tenant/': typeof DashboardTenantIndexRoute
+  '/dashboard/landlord/edit-property/$id': typeof DashboardLandlordEditPropertyIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -457,6 +465,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin': typeof DashboardAdminIndexRoute
   '/dashboard/landlord': typeof DashboardLandlordIndexRoute
   '/dashboard/tenant': typeof DashboardTenantIndexRoute
+  '/dashboard/landlord/edit-property/$id': typeof DashboardLandlordEditPropertyIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -514,6 +523,7 @@ export interface FileRoutesById {
   '/dashboard/admin/': typeof DashboardAdminIndexRoute
   '/dashboard/landlord/': typeof DashboardLandlordIndexRoute
   '/dashboard/tenant/': typeof DashboardTenantIndexRoute
+  '/dashboard/landlord/edit-property/$id': typeof DashboardLandlordEditPropertyIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -572,6 +582,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/'
     | '/dashboard/landlord/'
     | '/dashboard/tenant/'
+    | '/dashboard/landlord/edit-property/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -625,6 +636,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin'
     | '/dashboard/landlord'
     | '/dashboard/tenant'
+    | '/dashboard/landlord/edit-property/$id'
   id:
     | '__root__'
     | '/'
@@ -681,6 +693,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/'
     | '/dashboard/landlord/'
     | '/dashboard/tenant/'
+    | '/dashboard/landlord/edit-property/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1085,6 +1098,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminAnalyticsRouteImport
       parentRoute: typeof DashboardAdminRoute
     }
+    '/dashboard/landlord/edit-property/$id': {
+      id: '/dashboard/landlord/edit-property/$id'
+      path: '/edit-property/$id'
+      fullPath: '/dashboard/landlord/edit-property/$id'
+      preLoaderRoute: typeof DashboardLandlordEditPropertyIdRouteImport
+      parentRoute: typeof DashboardLandlordRoute
+    }
   }
 }
 
@@ -1135,6 +1155,7 @@ interface DashboardLandlordRouteChildren {
   DashboardLandlordTransactionsRoute: typeof DashboardLandlordTransactionsRoute
   DashboardLandlordVisitsRoute: typeof DashboardLandlordVisitsRoute
   DashboardLandlordIndexRoute: typeof DashboardLandlordIndexRoute
+  DashboardLandlordEditPropertyIdRoute: typeof DashboardLandlordEditPropertyIdRoute
 }
 
 const DashboardLandlordRouteChildren: DashboardLandlordRouteChildren = {
@@ -1148,6 +1169,7 @@ const DashboardLandlordRouteChildren: DashboardLandlordRouteChildren = {
   DashboardLandlordTransactionsRoute: DashboardLandlordTransactionsRoute,
   DashboardLandlordVisitsRoute: DashboardLandlordVisitsRoute,
   DashboardLandlordIndexRoute: DashboardLandlordIndexRoute,
+  DashboardLandlordEditPropertyIdRoute: DashboardLandlordEditPropertyIdRoute,
 }
 
 const DashboardLandlordRouteWithChildren =
