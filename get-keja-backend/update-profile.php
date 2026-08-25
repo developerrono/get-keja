@@ -40,7 +40,7 @@ try {
     }
 
     $stmt = $conn->prepare(
-        "SELECT id, full_name, email, role, phone, bio, avatar_url, status FROM users WHERE id = ?"
+        "SELECT id, full_name, email, role, phone, bio, avatar_url, status, phone_verified_at, email_verified_at FROM users WHERE id = ?"
     );
     $stmt->bind_param("i", $userId);
     $stmt->execute();

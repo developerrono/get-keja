@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AMENITIES, HOUSE_TYPES, type Unit, type HouseType } from "@/lib/landlord-data";
-import { createProperty, uploadPropertyMedia, type CreatePropertyUnit } from "@/lib/keja-api";
+import { createProperty, uploadPropertyMedia, getMyVerificationStatus, type CreatePropertyUnit } from "@/lib/keja-api";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Trash2, MapPin, ImageIcon, X, Film, Loader2, LocateFixed } from "lucide-react";
+import { Plus, Trash2, MapPin, ImageIcon, X, Film, Loader2, LocateFixed, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/landlord/add-property")({
@@ -28,6 +28,15 @@ const DEFAULT_CENTER = { lat: -1.286389, lng: 36.817223 };
 function AddPropertyPage() {
   const { profile } = useAuth();
   const navigate = useNavigate();
+
+  const [verifiedStatus, setVerifiedStatus] = useState<"loading" | "verified" | "unverified">("loading");
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    getMyVerificationStatus(profile.id)
+      .then((s) => setVerifiedStatus(s.is_verified_landlord ? "verified" : "unverified"))
+      .catch(() => setVerifiedStatus("unverified"));
+  }, [profile?.id]);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -178,6 +187,34 @@ function looksLikeImage(file: File) {
       setSubmitting(false);
     }
   };
+
+  if (verifiedStatus === "loading") {
+    return (
+      <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+        <div className="rounded-2xl border border-dashed border-border p-16 text-center text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" /> Checking your verification status…
+        </div>
+      </div>
+    );
+  }
+
+  if (verifiedStatus === "unverified") {
+    return (
+      <div className="p-6 lg:p-10 max-w-3xl mx-auto">
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-8 text-center">
+          <ShieldAlert className="h-8 w-8 mx-auto text-destructive" />
+          <h1 className="font-display text-xl font-bold mt-4">Verification required</h1>
+          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+            You need to complete identity verification before you can post a new listing.
+            This keeps fake landlords off the platform and protects tenants.
+          </p>
+          <Button asChild className="mt-6 rounded-full">
+            <Link to="/dashboard/landlord/verification">Get verified</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={submit} className="p-6 lg:p-10 max-w-5xl mx-auto space-y-8">

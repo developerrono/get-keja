@@ -1,10 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ValidatedInput } from "@/components/shared/ValidatedInput";
+import { VerifyContactCard } from "@/components/shared/VerifyContactCard";
+import { phoneFieldState, emailFieldState } from "@/lib/validators";
 import { useAuth } from "@/hooks/use-auth";
+import { deactivateAccount, logoutFromXampp } from "@/lib/keja-api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/landlord/settings")({
@@ -12,13 +16,41 @@ export const Route = createFileRoute("/dashboard/landlord/settings")({
   component: SettingsPage,
 });
 
-const TABS = ["Profile", "Business", "Notifications", "Password", "Security", "Danger"] as const;
+const TABS = ["Profile", "Business", "Notifications", "Password", "Security", "Deactivate"] as const;
 type Tab = (typeof TABS)[number];
 
 function SettingsPage() {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("Profile");
   const [notif, setNotif] = useState({ email: true, sms: false, push: true, marketing: false });
+
+  const [profileEmail, setProfileEmail] = useState(profile?.email ?? "");
+  const [profilePhone, setProfilePhone] = useState(profile?.phone ?? "");
+
+  // ---- Deactivate flow ----
+  const [reason, setReason] = useState("");
+  const [confirming, setConfirming] = useState(false);
+  const [deactivating, setDeactivating] = useState(false);
+
+  const handleDeactivate = async () => {
+    if (!profile?.id) return;
+    if (reason.trim().length < 10) {
+      toast.error("Please give a short reason (at least 10 characters) before deactivating.");
+      return;
+    }
+    setDeactivating(true);
+    try {
+      await deactivateAccount({ user_id: profile.id, reason: reason.trim() });
+      toast.success("Your account has been deactivated.");
+      logoutFromXampp();
+      navigate({ to: "/" });
+    } catch (err: any) {
+      toast.error(err.message || "Couldn't deactivate your account.");
+    } finally {
+      setDeactivating(false);
+    }
+  };
 
   return (
     <div className="p-6 lg:p-10 max-w-5xl mx-auto">
@@ -35,7 +67,7 @@ function SettingsPage() {
               onClick={() => setTab(t)}
               className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
                 tab === t ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-              } ${t === "Danger" ? "text-destructive" : ""}`}
+              } ${t === "Deactivate" ? "text-destructive" : ""}`}
             >
               {t}
             </button>
@@ -48,8 +80,24 @@ function SettingsPage() {
               <h2 className="font-display font-bold text-lg">Profile information</h2>
               <div className="grid gap-4 md:grid-cols-2">
                 <FieldRow label="Full name"><Input defaultValue={profile?.full_name ?? ""} /></FieldRow>
-                <FieldRow label="Email"><Input type="email" defaultValue={profile?.email ?? ""} /></FieldRow>
-                <FieldRow label="Phone"><Input defaultValue={profile?.phone ?? ""} placeholder="+254…" /></FieldRow>
+                <FieldRow label="Email">
+                  <ValidatedInput
+                    type="email"
+                    state={emailFieldState(profileEmail)}
+                    value={profileEmail}
+                    onChange={(e) => setProfileEmail(e.target.value)}
+                    invalidText="Enter a valid email address."
+                  />
+                </FieldRow>
+                <FieldRow label="Phone">
+                  <ValidatedInput
+                    state={phoneFieldState(profilePhone)}
+                    value={profilePhone}
+                    onChange={(e) => setProfilePhone(e.target.value)}
+                    placeholder="+254…"
+                    invalidText="Enter a valid Kenyan phone number."
+                  />
+                </FieldRow>
                 <FieldRow label="Avatar URL"><Input defaultValue={profile?.avatar_url ?? ""} /></FieldRow>
               </div>
               <div className="flex justify-end"><Button type="submit">Save changes</Button></div>
@@ -108,6 +156,24 @@ function SettingsPage() {
           {tab === "Security" && (
             <div className="space-y-4">
               <h2 className="font-display font-bold text-lg">Security</h2>
+
+              {profile?.id && (
+                <>
+                  <VerifyContactCard
+                    userId={profile.id}
+                    channel="phone"
+                    destination={profilePhone}
+                    verified={Boolean(profile?.phone_verified_at)}
+                  />
+                  <VerifyContactCard
+                    userId={profile.id}
+                    channel="email"
+                    destination={profileEmail}
+                    verified={Boolean(profile?.email_verified_at)}
+                  />
+                </>
+              )}
+
               <div className="flex items-center justify-between p-4 rounded-xl border border-border">
                 <div>
                   <div className="font-semibold text-sm">Two-factor authentication</div>
@@ -125,21 +191,55 @@ function SettingsPage() {
             </div>
           )}
 
-          {tab === "Danger" && (
+          {tab === "Deactivate" && (
             <div className="space-y-4">
-              <h2 className="font-display font-bold text-lg text-destructive">Danger zone</h2>
-              <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5">
-                <div className="font-semibold">Delete account</div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  This permanently removes your account and all associated properties, tenants, and messages. This action cannot be undone.
-                </p>
-                <Button
-                  variant="destructive"
-                  className="mt-4"
-                  onClick={() => toast.error("Account deletion requires confirmation")}
-                >
-                  Delete my account
-                </Button>
+              <h2 className="font-display font-bold text-lg text-destructive">Deactivate account</h2>
+              <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-5 space-y-4">
+                <div>
+                  <div className="font-semibold">Deactivate my account</div>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your account and data are kept — nothing is deleted. Deactivating hides your
+                    listings and signs you out. Our team reviews every deactivation for security
+                    reasons, so please tell us why.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Reason for deactivating
+                  </Label>
+                  <Textarea
+                    rows={3}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="e.g. Taking a break from renting out, selling the property, switching platforms…"
+                  />
+                </div>
+
+                {!confirming ? (
+                  <Button
+                    variant="destructive"
+                    onClick={() => {
+                      if (reason.trim().length < 10) {
+                        toast.error("Please give a short reason (at least 10 characters) first.");
+                        return;
+                      }
+                      setConfirming(true);
+                    }}
+                  >
+                    Deactivate my account
+                  </Button>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-sm font-medium">Are you sure? This will sign you out.</p>
+                    <Button variant="destructive" onClick={handleDeactivate} disabled={deactivating}>
+                      {deactivating ? "Deactivating…" : "Yes, deactivate"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setConfirming(false)} disabled={deactivating}>
+                      Cancel
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, Building2, Loader2, Mail, User, Phone } from "lucide-react";
+import { ArrowRight, Building2, Loader2, Mail, User, Phone, CheckCircle2, XCircle } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { useAuth } from "@/hooks/use-auth";
+import { emailFieldState, phoneFieldState } from "@/lib/validators";
 
 const OWNERSHIP_TYPES = [
   { value: "owner", label: "I own the property/properties" },
@@ -212,16 +213,30 @@ function SignupPage() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label htmlFor="email" className="text-xs">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              className="mt-1.5 h-11 rounded-xl"
-              required
-            />
+            <div className="relative mt-1.5">
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className={`h-11 rounded-xl pr-9 ${
+                  email && emailFieldState(email) === "valid"
+                    ? "border-green-500 focus-visible:ring-green-500"
+                    : email && emailFieldState(email) === "invalid"
+                    ? "border-destructive focus-visible:ring-destructive"
+                    : ""
+                }`}
+                required
+              />
+              {email && emailFieldState(email) === "valid" && (
+                <CheckCircle2 className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
+              )}
+              {email && emailFieldState(email) === "invalid" && (
+                <XCircle className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-destructive" />
+              )}
+            </div>
           </div>
           <div>
             <Label htmlFor="phone" className="text-xs">Phone (M-Pesa)</Label>
@@ -234,9 +249,21 @@ function SignupPage() {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="07XXXXXXXX"
-                className="h-11 rounded-xl pl-9"
+                className={`h-11 rounded-xl pl-9 pr-9 ${
+                  phone && phoneFieldState(phone) === "valid"
+                    ? "border-green-500 focus-visible:ring-green-500"
+                    : phone && phoneFieldState(phone) === "invalid"
+                    ? "border-destructive focus-visible:ring-destructive"
+                    : ""
+                }`}
                 required
               />
+              {phone && phoneFieldState(phone) === "valid" && (
+                <CheckCircle2 className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />
+              )}
+              {phone && phoneFieldState(phone) === "invalid" && (
+                <XCircle className="h-4 w-4 absolute right-3 top-1/2 -translate-y-1/2 text-destructive" />
+              )}
             </div>
           </div>
         </div>

@@ -43,6 +43,7 @@ import { Route as DashboardTenantFeedRouteImport } from './routes/dashboard.tena
 import { Route as DashboardTenantFavoritesRouteImport } from './routes/dashboard.tenant.favorites'
 import { Route as DashboardTenantCompareRouteImport } from './routes/dashboard.tenant.compare'
 import { Route as DashboardLandlordVisitsRouteImport } from './routes/dashboard.landlord.visits'
+import { Route as DashboardLandlordVerificationRouteImport } from './routes/dashboard.landlord.verification'
 import { Route as DashboardLandlordTransactionsRouteImport } from './routes/dashboard.landlord.transactions'
 import { Route as DashboardLandlordTenantsRouteImport } from './routes/dashboard.landlord.tenants'
 import { Route as DashboardLandlordSettingsRouteImport } from './routes/dashboard.landlord.settings'
@@ -237,6 +238,12 @@ const DashboardLandlordVisitsRoute = DashboardLandlordVisitsRouteImport.update({
   path: '/visits',
   getParentRoute: () => DashboardLandlordRoute,
 } as any)
+const DashboardLandlordVerificationRoute =
+  DashboardLandlordVerificationRouteImport.update({
+    id: '/verification',
+    path: '/verification',
+    getParentRoute: () => DashboardLandlordRoute,
+  } as any)
 const DashboardLandlordTransactionsRoute =
   DashboardLandlordTransactionsRouteImport.update({
     id: '/transactions',
@@ -396,6 +403,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/landlord/settings': typeof DashboardLandlordSettingsRoute
   '/dashboard/landlord/tenants': typeof DashboardLandlordTenantsRoute
   '/dashboard/landlord/transactions': typeof DashboardLandlordTransactionsRoute
+  '/dashboard/landlord/verification': typeof DashboardLandlordVerificationRoute
   '/dashboard/landlord/visits': typeof DashboardLandlordVisitsRoute
   '/dashboard/tenant/compare': typeof DashboardTenantCompareRoute
   '/dashboard/tenant/favorites': typeof DashboardTenantFavoritesRoute
@@ -450,6 +458,7 @@ export interface FileRoutesByTo {
   '/dashboard/landlord/settings': typeof DashboardLandlordSettingsRoute
   '/dashboard/landlord/tenants': typeof DashboardLandlordTenantsRoute
   '/dashboard/landlord/transactions': typeof DashboardLandlordTransactionsRoute
+  '/dashboard/landlord/verification': typeof DashboardLandlordVerificationRoute
   '/dashboard/landlord/visits': typeof DashboardLandlordVisitsRoute
   '/dashboard/tenant/compare': typeof DashboardTenantCompareRoute
   '/dashboard/tenant/favorites': typeof DashboardTenantFavoritesRoute
@@ -508,6 +517,7 @@ export interface FileRoutesById {
   '/dashboard/landlord/settings': typeof DashboardLandlordSettingsRoute
   '/dashboard/landlord/tenants': typeof DashboardLandlordTenantsRoute
   '/dashboard/landlord/transactions': typeof DashboardLandlordTransactionsRoute
+  '/dashboard/landlord/verification': typeof DashboardLandlordVerificationRoute
   '/dashboard/landlord/visits': typeof DashboardLandlordVisitsRoute
   '/dashboard/tenant/compare': typeof DashboardTenantCompareRoute
   '/dashboard/tenant/favorites': typeof DashboardTenantFavoritesRoute
@@ -567,6 +577,7 @@ export interface FileRouteTypes {
     | '/dashboard/landlord/settings'
     | '/dashboard/landlord/tenants'
     | '/dashboard/landlord/transactions'
+    | '/dashboard/landlord/verification'
     | '/dashboard/landlord/visits'
     | '/dashboard/tenant/compare'
     | '/dashboard/tenant/favorites'
@@ -621,6 +632,7 @@ export interface FileRouteTypes {
     | '/dashboard/landlord/settings'
     | '/dashboard/landlord/tenants'
     | '/dashboard/landlord/transactions'
+    | '/dashboard/landlord/verification'
     | '/dashboard/landlord/visits'
     | '/dashboard/tenant/compare'
     | '/dashboard/tenant/favorites'
@@ -678,6 +690,7 @@ export interface FileRouteTypes {
     | '/dashboard/landlord/settings'
     | '/dashboard/landlord/tenants'
     | '/dashboard/landlord/transactions'
+    | '/dashboard/landlord/verification'
     | '/dashboard/landlord/visits'
     | '/dashboard/tenant/compare'
     | '/dashboard/tenant/favorites'
@@ -958,6 +971,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLandlordVisitsRouteImport
       parentRoute: typeof DashboardLandlordRoute
     }
+    '/dashboard/landlord/verification': {
+      id: '/dashboard/landlord/verification'
+      path: '/verification'
+      fullPath: '/dashboard/landlord/verification'
+      preLoaderRoute: typeof DashboardLandlordVerificationRouteImport
+      parentRoute: typeof DashboardLandlordRoute
+    }
     '/dashboard/landlord/transactions': {
       id: '/dashboard/landlord/transactions'
       path: '/transactions'
@@ -1153,6 +1173,7 @@ interface DashboardLandlordRouteChildren {
   DashboardLandlordSettingsRoute: typeof DashboardLandlordSettingsRoute
   DashboardLandlordTenantsRoute: typeof DashboardLandlordTenantsRoute
   DashboardLandlordTransactionsRoute: typeof DashboardLandlordTransactionsRoute
+  DashboardLandlordVerificationRoute: typeof DashboardLandlordVerificationRoute
   DashboardLandlordVisitsRoute: typeof DashboardLandlordVisitsRoute
   DashboardLandlordIndexRoute: typeof DashboardLandlordIndexRoute
   DashboardLandlordEditPropertyIdRoute: typeof DashboardLandlordEditPropertyIdRoute
@@ -1167,6 +1188,7 @@ const DashboardLandlordRouteChildren: DashboardLandlordRouteChildren = {
   DashboardLandlordSettingsRoute: DashboardLandlordSettingsRoute,
   DashboardLandlordTenantsRoute: DashboardLandlordTenantsRoute,
   DashboardLandlordTransactionsRoute: DashboardLandlordTransactionsRoute,
+  DashboardLandlordVerificationRoute: DashboardLandlordVerificationRoute,
   DashboardLandlordVisitsRoute: DashboardLandlordVisitsRoute,
   DashboardLandlordIndexRoute: DashboardLandlordIndexRoute,
   DashboardLandlordEditPropertyIdRoute: DashboardLandlordEditPropertyIdRoute,

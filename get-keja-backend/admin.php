@@ -53,7 +53,7 @@ try {
         }
 
         if ($action === 'list_users') {
-            $rows = $conn->query("SELECT id, full_name, email, role, status, phone, created_at FROM users ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
+            $rows = $conn->query("SELECT id, full_name, email, role, status, phone, deactivation_reason, deactivated_at, created_at FROM users ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
             foreach ($rows as &$r) {
                 $r['roles'] = [$r['role']];
                 $r['is_verified'] = $r['role'] === 'verified_landlord';
@@ -113,6 +113,22 @@ try {
     if ($method === 'POST') {
         $data = json_decode(file_get_contents("php://input"), true);
         $action = $data['action'] ?? '';
+
+        if ($action === 'reactivate_user') {
+            $id = (int)($data['id'] ?? 0);
+            if ($id <= 0) {
+                echo json_encode(["success" => false, "message" => "id is required."]);
+                exit;
+            }
+            $stmt = $conn->prepare(
+                "UPDATE users SET status = 'active', deactivation_reason = NULL, deactivated_at = NULL WHERE id = ?"
+            );
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $stmt->close();
+            echo json_encode(["success" => true]);
+            exit;
+        }
 
         if ($action === 'update_verification') {
             $id = (int)($data['id'] ?? 0);

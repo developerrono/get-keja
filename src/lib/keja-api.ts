@@ -89,6 +89,8 @@ export type DbTenantPrefs = {
 export type DbVerification = {
   id: string; landlord_id: string; status: string; admin_notes: string | null;
   full_name?: string; email?: string; phone?: string | null;
+  national_id?: string; id_photo_url?: string | null; selfie_url?: string | null;
+  business_name?: string | null; created_at?: string; reviewed_at?: string | null;
   landlord?: { full_name: string | null; email: string | null; phone: string | null; avatar_url: string | null };
 };
 
@@ -461,9 +463,27 @@ export async function adminStats() {
   return json.data;
 }
 
+export type DbAdminUser = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  role: string;
+  status: string;
+  phone: string | null;
+  deactivation_reason: string | null;
+  deactivated_at: string | null;
+  created_at: string;
+  roles: string[];
+  is_verified: boolean;
+};
+
 export async function adminListUsers() {
   const json = await apiGet("admin.php", { action: "list_users" });
-  return json.data;
+  return json.data as DbAdminUser[];
+}
+
+export async function adminReactivateUser(id: string) {
+  await apiPost("admin.php", { action: "reactivate_user", id });
 }
 
 export async function adminListVerifications() {
@@ -511,12 +531,20 @@ export async function adminBroadcast(input: { author_id: string; category: strin
 
 /* -------------------- Move In (tenant self-service) -------------------- */
 
+/**
+ * IMPORTANT: this must only be called AFTER a successful M-Pesa payment.
+ * Get `checkoutRequestId` from initiateStkPush() + waitForMpesaResult()
+ * (status === "success") first — see MoveInButton.tsx for the full flow.
+ * The backend independently re-checks the transaction succeeded, so this
+ * can't be bypassed by calling moveIn() directly.
+ */
 export async function moveIn(input: {
   tenant_id: string;
   property_id: string;
   landlord_id: string;
   monthly_rent: number;
   unit_id?: string | null;
+  checkout_request_id: string;
 }) {
   const json = await apiPost("move-in.php", input);
   return json.id as string;
@@ -640,4 +668,57 @@ export async function requestPayout(input: {
  *  to handle a `units` key (see note above) — it doesn't yet. */
 export async function updatePropertyUnits(propertyId: string, units: CreatePropertyUnit[]) {
   await apiPost("update-property.php", { id: propertyId, units });
+}
+
+/* -------------------- Phone / Email OTP verification -------------------- */
+
+export async function sendOtp(input: { user_id: string; channel: "phone" | "email"; destination: string }) {
+  const json = await apiPost("send-otp.php", input);
+  return json.message as string;
+}
+
+export async function verifyOtp(input: { user_id: string; channel: "phone" | "email"; code: string }) {
+  const json = await apiPost("verify-otp.php", input);
+  return json.message as string;
+}
+
+/* -------------------- Landlord ID/selfie verification -------------------- */
+
+export type MyVerificationStatus = {
+  role: string;
+  is_verified_landlord: boolean;
+  phone_verified: boolean;
+  email_verified: boolean;
+  verification: {
+    id: string;
+    status: "pending" | "approved" | "rejected" | "info_requested";
+    admin_notes: string | null;
+    created_at: string;
+    reviewed_at: string | null;
+  } | null;
+};
+
+export async function getMyVerificationStatus(landlordId: string) {
+  const json = await apiGet("my-verification.php", { landlord_id: landlordId });
+  return json.data as MyVerificationStatus;
+}
+
+export async function submitLandlordVerification(input: {
+  landlord_id: string;
+  full_name: string;
+  phone?: string;
+  national_id: string;
+  id_photo_url: string;
+  selfie_url: string;
+  business_name?: string;
+}) {
+  const json = await apiPost("submit-verification.php", input);
+  return json.message as string;
+}
+
+/* -------------------- Account deactivation (replaces hard delete) -------------------- */
+
+export async function deactivateAccount(input: { user_id: string; reason: string }) {
+  const json = await apiPost("deactivate-account.php", input);
+  return json.message as string;
 }

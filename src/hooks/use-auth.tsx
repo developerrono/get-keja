@@ -16,6 +16,8 @@ export type Profile = {
   email: string | null;
   avatar_url: string | null;
   phone: string | null;
+  phone_verified_at?: string | null;
+  email_verified_at?: string | null;
 };
 
 type AuthState = {
@@ -50,6 +52,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: userData.email,
           avatar_url: userData.avatarUrl || null,
           phone: userData.phone || null,
+          phone_verified_at: userData.phone_verified_at || null,
+          email_verified_at: userData.email_verified_at || null,
         });
       } catch (e) {
         console.error("Failed to parse local user data", e);

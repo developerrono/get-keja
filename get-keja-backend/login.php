@@ -48,6 +48,21 @@ try {
         exit;
     }
 
+    if ($user['status'] === 'deactivated') {
+        echo json_encode([
+            "success" => false,
+            "message" => "This account has been deactivated. Contact support if you'd like to reactivate it.",
+        ]);
+        exit;
+    }
+    if ($user['status'] === 'suspended') {
+        echo json_encode([
+            "success" => false,
+            "message" => "This account has been suspended. Contact support for more information.",
+        ]);
+        exit;
+    }
+
     unset($user['password']);
     $user['id'] = (string)$user['id'];
     $user['fullName'] = $user['full_name'];

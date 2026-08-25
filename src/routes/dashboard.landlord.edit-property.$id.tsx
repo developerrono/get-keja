@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,10 +17,11 @@ import {
   updateProperty,
   updatePropertyUnits,
   uploadPropertyMedia,
+  getMyVerificationStatus,
   type CreatePropertyUnit,
 } from "@/lib/keja-api";
 import { useAuth } from "@/hooks/use-auth";
-import { Plus, Trash2, MapPin, ImageIcon, X, Film, Loader2, LocateFixed } from "lucide-react";
+import { Plus, Trash2, MapPin, ImageIcon, X, Film, Loader2, LocateFixed, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/landlord/edit-property/$id")({
@@ -37,6 +38,14 @@ function EditPropertyPage() {
 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [verifiedStatus, setVerifiedStatus] = useState<"loading" | "verified" | "unverified">("loading");
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    getMyVerificationStatus(profile.id)
+      .then((s) => setVerifiedStatus(s.is_verified_landlord ? "verified" : "unverified"))
+      .catch(() => setVerifiedStatus("unverified"));
+  }, [profile?.id]);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -263,6 +272,23 @@ function EditPropertyPage() {
     return (
       <div className="p-10 text-center text-sm text-muted-foreground">
         Couldn't load this property. It may have been deleted, or you don't have access to it.
+      </div>
+    );
+  }
+
+  if (verifiedStatus === "unverified") {
+    return (
+      <div className="p-6 lg:p-10 max-w-3xl mx-auto">
+        <div className="rounded-2xl border border-destructive/40 bg-destructive/5 p-8 text-center">
+          <ShieldAlert className="h-8 w-8 mx-auto text-destructive" />
+          <h1 className="font-display text-xl font-bold mt-4">Verification required</h1>
+          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
+            You need to complete identity verification before you can update listings.
+          </p>
+          <Button asChild className="mt-6 rounded-full">
+            <Link to="/dashboard/landlord/verification">Get verified</Link>
+          </Button>
+        </div>
       </div>
     );
   }
