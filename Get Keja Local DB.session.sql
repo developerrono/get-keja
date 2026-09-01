@@ -1,1 +1,2 @@
-SELECT id, full_name, role FROM users WHERE role = 'landlord';
+SHOW TABLES LIKE 'otp_codes';
+SHOW TABLES LIKE 'landlord_verifications';
