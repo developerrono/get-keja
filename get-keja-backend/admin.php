@@ -45,6 +45,7 @@ try {
                 "pendingVerifications" => $verifStatus['pending'] ?? 0,
                 "totalProperties" => (int)$totalProperties,
                 "activeListings" => $propStatus['active'] ?? 0,
+                "pendingListings" => $propStatus['pending'] ?? 0,
                 "flaggedListings" => $propStatus['hidden'] ?? 0,
                 "openReports" => (int)$openReports,
                 "totalReviews" => (int)$totalReviews,
@@ -87,7 +88,30 @@ try {
         }
 
         if ($action === 'list_properties') {
-            $rows = $conn->query("SELECT * FROM properties ORDER BY created_at DESC")->fetch_all(MYSQLI_ASSOC);
+            // Optional ?status=pending|active|rejected|... filter, e.g. for the
+            // admin "listings awaiting verification" view. Omit or pass "all"
+            // to get everything. Landlord name/email are joined in since the
+            // admin review screen needs to show who submitted each listing.
+            $statusFilter = trim($_GET['status'] ?? '');
+
+            $sql = "SELECT p.*, u.full_name AS landlord_name, u.email AS landlord_email
+                    FROM properties p
+                    JOIN users u ON u.id = p.landlord_id";
+            if ($statusFilter !== '' && $statusFilter !== 'all') {
+                $sql .= " WHERE p.status = ?";
+            }
+            $sql .= " ORDER BY p.created_at DESC";
+
+            if ($statusFilter !== '' && $statusFilter !== 'all') {
+                $stmt = $conn->prepare($sql);
+                $stmt->bind_param("s", $statusFilter);
+                $stmt->execute();
+                $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+                $stmt->close();
+            } else {
+                $rows = $conn->query($sql)->fetch_all(MYSQLI_ASSOC);
+            }
+
             foreach ($rows as &$r) {
                 $r['images'] = json_decode($r['images'] ?? '[]', true) ?: [];
                 $r['featured'] = (bool)$r['featured'];
@@ -211,6 +235,36 @@ try {
             $stmt->bind_param($types, ...$values);
             $stmt->execute();
             $stmt->close();
+
+            // Notify the landlord when their listing is verified (approved) or
+            // rejected, mirroring the landlord-identity verification flow above.
+            // admin_notes here is only used for the notification text — the
+            // properties table has no admin_notes column to persist it in.
+            if (array_key_exists('status', $data) && in_array($data['status'], ['active', 'rejected'], true)) {
+                $prow = $conn->query("SELECT landlord_id, name FROM properties WHERE id = " . (int)$id)->fetch_assoc();
+                if ($prow) {
+                    $landlordId = (int)$prow['landlord_id'];
+                    $propName = $prow['name'];
+                    $adminNotes = trim($data['admin_notes'] ?? '');
+
+                    if ($data['status'] === 'active') {
+                        $title = "Listing approved";
+                        $body = "Your property \"$propName\" has been verified and is now visible to tenants.";
+                    } else {
+                        $title = "Listing rejected";
+                        $body = "Your property \"$propName\" was not approved."
+                              . ($adminNotes !== '' ? " Reason: $adminNotes" : " Please review the details and resubmit.");
+                    }
+
+                    $notif = $conn->prepare(
+                        "INSERT INTO notifications (user_id, type, title, body) VALUES (?, 'property_review', ?, ?)"
+                    );
+                    $notif->bind_param("iss", $landlordId, $title, $body);
+                    $notif->execute();
+                    $notif->close();
+                }
+            }
+
             echo json_encode(["success" => true]);
             exit;
         }

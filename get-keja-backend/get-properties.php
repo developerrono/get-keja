@@ -22,6 +22,14 @@ try {
     $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
     $offset = ($page - 1) * $perPage;
 
+    // Plain public browsing (no status param at all — e.g. the tenant-facing
+    // listing page) is the only case that should also hide "full" properties
+    // (every unit occupied). A landlord viewing their own dashboard passes
+    // status=all, and anyone explicitly filtering by a specific status is
+    // asking a narrower question than "what can a tenant rent right now",
+    // so we leave those requests alone.
+    $isPublicBrowse = ($status === '');
+
     $where = [];
     $types = "";
     $values = [];
@@ -46,9 +54,20 @@ try {
     if ($landlordId !== null) { $where[] = "p.landlord_id = ?"; $types .= "i"; $values[] = $landlordId; }
 
     $whereSql = $where ? ("WHERE " . implode(" AND ", $where)) : "";
+    $havingSql = $isPublicBrowse ? "HAVING vacant_count > 0" : "";
 
-    // Total count (for pagination)
-    $countSql = "SELECT COUNT(*) c FROM properties p $whereSql";
+    // Total count (for pagination). This has to apply the same vacancy
+    // aggregation + HAVING as the main query, or pagination totals would
+    // include full properties that the main query then filters out.
+    $countSql = "SELECT COUNT(*) c FROM (
+                    SELECT p.id,
+                           COALESCE(SUM(CASE WHEN u.is_vacant = 1 THEN 1 ELSE 0 END), 0) AS vacant_count
+                    FROM properties p
+                    LEFT JOIN property_units u ON u.property_id = p.id
+                    $whereSql
+                    GROUP BY p.id
+                    $havingSql
+                 ) t";
     if ($types !== "") {
         $stmt = $conn->prepare($countSql);
         $stmt->bind_param($types, ...$values);
@@ -70,6 +89,7 @@ try {
             LEFT JOIN property_units u ON u.property_id = p.id
             $whereSql
             GROUP BY p.id
+            $havingSql
             ORDER BY p.created_at DESC
             LIMIT ? OFFSET ?";
     $types2 = $types . "ii";

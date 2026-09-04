@@ -35,7 +35,13 @@ try {
     $houseRules = json_encode($data['house_rules'] ?? []);
     $nearby = json_encode($data['nearby'] ?? (object)[]);
     $areaSqm = $data['area_sqm'] ?? null;
-    $status = $data['status'] ?? 'active';
+
+    // New listings start out unverified. They're saved as 'pending' unless the
+    // caller explicitly overrides it (e.g. an admin-created listing), and
+    // get-properties.php's default (public-facing) query only ever returns
+    // status = 'active', so a pending listing is invisible to tenants until
+    // an admin approves it from /dashboard/admin/properties.
+    $status = $data['status'] ?? 'pending';
 
     // The property-level house_type/monthly_rent columns are derived from
     // the units, since the "Add property" form collects those per unit —
@@ -72,6 +78,17 @@ try {
         $unitStmt->execute();
     }
     $unitStmt->close();
+
+    // Let the landlord know their listing is awaiting review.
+    $title = "Listing submitted for review";
+    $body = "Your property \"$name\" has been submitted and will go live once an admin verifies it.";
+    $notif = $conn->prepare(
+        "INSERT INTO notifications (user_id, type, title, body) VALUES (?, 'property_review', ?, ?)"
+    );
+    $notif->bind_param("iss", $landlordId, $title, $body);
+    $notif->execute();
+    $notif->close();
+
     $conn->close();
 
     echo json_encode(["success" => true, "id" => (string)$propertyId]);
