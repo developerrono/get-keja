@@ -34,9 +34,7 @@ The project was developed as a full-stack application using React, TypeScript, P
 - Protected routes
 - Session management
 
----
-
-## 🏘️ Tenant Features
+ Tenant Features
 
 - Browse available rental properties
 - Search properties by location
